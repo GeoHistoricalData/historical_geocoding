@@ -1,0 +1,8 @@
+﻿# historical_geocoding extension
+comment = 'Short extension to offer geocodig (precise and rough) for historical data. Requiers geohistorical_object, pgsfti, pg_tgrm, postgis'
+default_version = '1.0'
+module_pathname = '$libdir/historical_geocoding'
+relocatable = true
+
+
+
