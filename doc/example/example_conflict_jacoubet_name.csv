@@ -1,0 +1,39 @@
+﻿id1,nom_1,count_1,id2,nom_2,count_2,proximite_semantique(entre_0_et_1),distance_spatial(m)
+597,Rue de la Vieille Tannerie,1,581,Rue de la Tannerie,2,0.703704,74
+1319,Rue Saint-Martin,31,948,Rue du Marché Saint-Martin,2,0.708333,210
+576,Rue de la Sonnerie,2,515,Rue de la Cossonnerie,1,0.708333,409
+1087,Rue la Vrillière,2,200,Petite Rue la Vrillière,1,0.708333,0
+600,Rue de la Voirie,2,197,Petite Rue de la Voirie,1,0.708333,0
+674,Rue des Accacias,2,199,Petite Rue des Accacias,3,0.708333,0
+943,Rue du Marché aux Chevaux,5,135,Marché Aux Chevaux,2,0.708333,0
+1315,Rue Saint-Marc,4,1189,Rue Neuve Saint-Marc,1,0.714286,0
+1326,Rue Saint-Paul,6,1193,Rue Neuve saint-Paul,3,0.714286,0
+1293,Rue Saint-Germain l'Auxerrois,9,247,Place Saint-Germain l'Auxerrois,2,0.714286,158
+1379,Rue Valois Beaujolais,5,333,Rue Beaujolais,2,0.714286,104
+1039,Rue Grange Batelière,2,1038,Rue Grange BateliÃšre,1,0.72,0
+787,Rue des Murs de la Roquette,1,573,Rue de la Roquette,10,0.72,0
+1276,Rue Sainte-Croix de la Bretonnerie,8,184,Passage Sainte-Croix de la Bretonnerie,1,0.72093,0
+804,Rue des Poivrées,1,802,Rue des Poirées,1,0.722222,31
+1293,Rue Saint-Germain l'Auxerrois,9,742,Rue des Fossés Saint-Germain l'Auxerrois,4,0.725,150
+1267,Rue Saint-Denis,47,1179,Rue Neuve Saint-Denis,2,0.727273,0
+588,Rue de la Vannerie,4,581,Rue de la Tannerie,2,0.727273,0
+963,Rue du Petit Banquier,1,868,Rue du Banquier,4,0.727273,0
+1161,Rue Neuve de Bretagne,2,456,Rue de Bretagne,5,0.727273,16
+1329,Rue Saint-Pierre,3,330,Rue Basse Saint-Pierre,4,0.73913,277
+1329,Rue Saint-Pierre,3,203,Petite Rue Saint-Pierre,3,0.73913,207
+576,Rue de la Sonnerie,2,575,Rue de la Savonnerie,2,0.73913,88
+1291,Rue Saint-George,3,1185,Rue Neuve Saint-George,1,0.73913,0
+1156,Rue Neuve Bourg-l'Abbé,1,357,Rue Bourg l'Abbé,7,0.73913,0
+1159,Rue Neuve de Bellechasse,2,448,Rue de Bellechasse,3,0.76,0
+1334,Rue Saint-Sauveur,2,1195,Rue Neuve Saint-Sauveur,1,0.761905,148
+1095,Ruelle des Gobelins,1,753,Rue des Gobelins,1,0.761905,0
+1186,Rue Neuve Saint-Gilles,4,202,Petite Rue Neuve Saint-Gilles,1,0.766667,0
+1166,Rue Neuve de Ménilmontant,2,638,Rue de Ménilmontant,10,0.769231,0
+1197,Rue Neuves des Bons Enfants,3,692,Rue des Bons Enfants,3,0.777778,0
+307,Quai Valmy,11,295,Quai de Valmy,8,0.785714,247
+1292,Rue Saint-Germain des Près,2,741,Rue des Fossés Saint-Germain des Près,2,0.787879,363
+1099,Ruelle des Paillassons,1,794,Rue des Paillassons,2,0.791667,0
+966,Rue du Petit Champ de l'Alouette,2,877,Rue du Champ de l'Alouette,4,0.8125,0
+230,Place du la Madeleine,1,216,Place de la Madeleine,4,0.833333,0
+1292,Rue Saint-Germain des Près,2,1234,Rue Place Saint-Germain des Près,1,0.83871,0
+167,Passage du Beaufort,1,139,Passage Beaufort,2,0.85,0
