@@ -6,32 +6,32 @@
 -- import et normalisation du plan de Paris de Jacoubet de Benoit
 -- 
 --------------------------------
-  CREATE EXTENSION IF NOT EXISTS postal ; 
-  CREATE EXTENSION IF NOT EXISTS postgis ; 	
+  -- CREATE EXTENSION IF NOT EXISTS postal ; 
+  -- CREATE EXTENSION IF NOT EXISTS postgis ; 	
   CREATE SCHEMA IF NOT EXISTS jacoubet_paris ; 
   SET search_path to jacoubet_paris, historical_geocoding, geohistorical_object, public; 
 
 -- import data into database
   
-	--load jacoubet road axis data with  shp2pgsql
-	    -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/reseau_routier_benoit_20160701/jacoubet_l93_utf8.shp jacoubet_paris.jacoubet_src_axis  > /tmp/tmp_jacoubet.sql ;
-	    --  psql -d geocodage_historique -f /tmp/tmp_jacoubet.sql ;
+  --load jacoubet road axis data with  shp2pgsql
+    -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/jacoubet_l93_utf8.shp jacoubet_paris.jacoubet_src_axis | psql -d test_geocodage;
 
+  -- load jacoubet building  number
+	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/vasserot_adresses_alpage_bis.shp jacoubet_paris.jacoubet_src_number | psql -d test_geocodage ;
 
-	-- load jacoubet building  number
-	    -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/EHESS/GIS_maurizio/Vasserot_jacoub3/vasserot_adresses_alpage_bis.shp jacoubet_paris.jacoubet_src_number  > /tmp/tmp_jacoubet.sql ;
-	    --  psql -d geocodage_historique -f /tmp/tmp_jacoubet.sql ;
+  -- load jacoubet planche, that is the estimated time interval for each par tof the jacoubet map
+	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/jacoubet_planche.shp jacoubet_paris.jacoubet_src_planche_l93 | psql -d test_geocodage;
 
-	-- load jacoubet planche, that is the estimated time interval for each par tof the jacoubet map
-	    -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/bertrand/jacoubet_planche.shp jacoubet_paris.jacoubet_src_planche_l93  > /tmp/tmp_jacoubet2.sql ;
-	    --  psql -d geocodage_historique -f /tmp/tmp_jacoubet2.sql ;
-
+ALTER TABLE jacoubet_paris.jacoubet_src_axis ALTER COLUMN geom TYPE geometry(multilinestring,2154) USING ST_Multi(ST_SetSRID(geom,2154)); 
+ALTER TABLE jacoubet_paris.jacoubet_src_number ALTER COLUMN geom TYPE geometry(multipoint,2154) USING ST_Multi(ST_SetSRID(geom,2154)); 
+ALTER TABLE jacoubet_paris.jacoubet_src_planche_l93 ALTER COLUMN geom TYPE geometry(multipolygon,2154) USING ST_Multi(ST_SetSRID(geom,2154)); 
 	
-
+SELECT *
+FROM geohistorical_object.historical_source ;
 
 -- add relevant entry into geohistorical_object schema : `historical_source` and `numerical_origin_process`
 
-	/*
+
 		INSERT INTO geohistorical_object.historical_source VALUES 
 			('jacoubet_paris'
 			, 'Atlas Général de la Ville, des faubourgs et des monuments de Paris, Simon-Théodore Jacoubet'
@@ -51,9 +51,8 @@
 		, sfti_makesfti(1825, 1827, 1836, 1837)
 		,  '{"default": 4, "road_axis":2.5, "building":1, "number":2}'::json 
 		) ; 
-	*/
 
-	/*
+
 		INSERT INTO geohistorical_object.numerical_origin_process VALUES
 		('jacoubet_paris_axis'
 			, 'The axis were manually created by people from geohistorical data project, using the georeferenced scan as background'
@@ -71,7 +70,7 @@
 			, 'Each number had a quartier information. We corrected this information to eliminate error of typing most likely, and created a quartier geometry usign a buffer(buffer(geom,300),-290), ie conceptually an alpha shape'
 			, sfti_makesfti('17/10/2016'::date, '17/10/2016'::date, '18/10/2016'::date, '18/10/2016'::date)  -- date of data creation
 			, '{"default": 1, "quartier":300}'::json) --precision
-	*/	 
+	 
 
 
 -- ### Create new tables inheriting from `historical_geocoding` ###
@@ -96,15 +95,15 @@
 		, quartier text 
 	) INHERITS (precise_localisation) ; 
 
-	DROP TABLE IF EXISTS jacoubet_alias ;
+	DROP TABLE IF EXISTS jacoubet_relations ;
 	CREATE TABLE jacoubet_alias (
-	) INHERITS (normalised_name_alias) ;
+	) INHERITS (geohistorical_relation) ;
 
 -- register this new tables
-	 SELECT geohistorical_object.register_geohistorical_object_table(  'jacoubet_paris', 'jacoubet_axis'::regclass)
-		, geohistorical_object.register_geohistorical_object_table(  'jacoubet_paris', 'jacoubet_quartier'::regclass)
-		, geohistorical_object.register_geohistorical_object_table(  'jacoubet_paris', 'jacoubet_number'::regclass)
-		, geohistorical_object.register_geohistorical_object_table(  'jacoubet_paris', 'jacoubet_alias'::regclass) ;
+	 SELECT geohistorical_object.register_geohistorical_object_table(  'jacoubet_paris', 'jacoubet_axis'::text)
+		, geohistorical_object.register_geohistorical_object_table(  'jacoubet_paris', 'jacoubet_quartier'::text)
+		, geohistorical_object.register_geohistorical_object_table(  'jacoubet_paris', 'jacoubet_number'::text)
+		, geohistorical_object.register_geohistorical_object_table(  'jacoubet_paris', 'jacoubet_relations'::text) ;
 
 --index whats necessary
 	-- creating indexes 
@@ -192,13 +191,13 @@
 		FROM jacoubet_src_axis_ambiguity ; 
 
 		--inserting into geocoding table :
-		CREATE EXTENSION IF NOT EXISTS unaccent;
+		-- CREATE EXTENSION IF NOT EXISTS unaccent;
 		--	TRUNCATE jacoubet_axis
  
-		
+		TRUNCATE jacoubet_axis ;
 		INSERT INTO jacoubet_axis
 		SELECT nom_entier AS historical_name
-			,geohistorical_object.clean_text(nom_entier)   AS normalised_name
+			, nom_entier || ', Paris'
 			,geom AS geom
 			,NULL AS specific_fuzzy_date
 			,NULL AS specific_spatial_precision 
@@ -279,7 +278,7 @@
 	INSERT INTO jacoubet_quartier(historical_name, normalised_name, geom, specific_fuzzy_date, specific_spatial_precision, historical_source, numerical_origin_process)
 		SELECT
 			cleaned_quartier AS historical_name
-			,'quartier '||geohistorical_object.clean_text(cleaned_quartier)   AS normalised_name
+			,'quartier '|| cleaned_quartier || ', Paris'AS normalised_name
 			,ST_Transform(geom , 2154) AS geom
 			,NULL AS specific_fuzzy_date
 			,NULL AS specific_spatial_precision 
@@ -287,7 +286,7 @@
 			, 'jacoubet_paris_quartier' AS numerical_origin_process  
 	FROM jacoubet_src_number_quartier_error ; 
 
-	UPDATE jacoubet_quartier SET specific_spatial_precision = (ST_MinimumBoundingRadius(geom)).radius ;  
+	-- UPDATE jacoubet_quartier SET specific_spatial_precision = (ST_MinimumBoundingRadius(geom)).radius ;  
 
 	-- checking potential errors in nom_entier (road_name)
 	SELECT  ct, count(*)
@@ -345,7 +344,7 @@
 	
 	INSERT INTO jacoubet_number (historical_name, normalised_name, geom, specific_fuzzy_date, specific_spatial_precision, historical_source, numerical_origin_process, associated_normalised_rough_name, id_num_sca, id_parc, quartier)
 		SELECT full_name AS historical_name
-			,geohistorical_object.clean_text(full_name)   AS normalised_name
+			, full_name || ', Paris'   AS normalised_name
 			,ST_Transform(ST_SetSRID(geom, 932007) , 2154) AS geom
 			,NULL AS specific_fuzzy_date
 			,NULL AS specific_spatial_precision 
@@ -360,4 +359,8 @@
 				, geom
 			FROM jacoubet_src_number)
 			AS cleaned_name  ;
+
+	SELECT *
+	FROM jacoubet_number
+	LIMIT 100 ; 
 		

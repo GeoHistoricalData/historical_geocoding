@@ -12,14 +12,11 @@
 
 
 -- importing the two files
-	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_IGN/bd_adresse/adresse.shp ign_paris.ign_bdadresse_src  >> /tmp/tmp_ign.sql ;
-	-- psql -d geocodage_historique -f /tmp/tmp_ign.sql  ;
+	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/adresse.shp ign_paris.ign_bdadresse_src | psql -d test_geocodage ;
 
-	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_IGN/bd_adresse/troncon_de_route.shp ign_paris.ign_bdadresse_axis_src  >> /tmp/tmp_ign2.sql ;
-	-- psql -d geocodage_historique -f /tmp/tmp_ign2.sql  ;
+	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/troncon_de_route_bdadresse.shp ign_paris.ign_bdadresse_axis_src | psql -d test_geocodage;
 
-	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -W "LATIN1" -I /media/sf_RemiCura/DATA/Donnees_IGN/geofla/GEOFLA/1_DONNEES_LIVRAISON_2014-12-00066/GEOFLA_2-0_SHP_LAMB93_FR-ED141/COMMUNE/COMMUNE.SHP ign_paris.ign_commune_src  >> /tmp/tmp_ign3.sql ;
-	-- psql -d geocodage_historique -f /tmp/tmp_ign3.sql  ;
+	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -W "LATIN1" -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/COMMUNE.SHP ign_paris.ign_commune_src | psql -d test_geocodage ;
 	
 	ALTER TABLE ign_bdadresse_src ALTER COLUMN geom TYPE geometry(point,2154) USING ST_SetSRID(geom,2154)  ; 
 	ALTER TABLE ign_bdadresse_axis_src ALTER COLUMN geom TYPE geometry(MultilinestringZ,2154) USING ST_SetSRID(ST_Force3D(geom),2154)  ; 
@@ -31,7 +28,21 @@
 		nom_complet text PRIMARY KEY
 		, abbreviation text
 	); 
-	COPY ign_bdtopo_abbreviations FROM '/media/sf_RemiCura/DATA/Donnees_IGN/BD TOPO/abbreviation_nom_rue.csv' DELIMITER ';' CSV HEADER;
+	COPY ign_bdtopo_abbreviations FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/abbreviation_nom_rue.csv' DELIMITER ';' CSV HEADER;
+
+	DROP TABLE IF EXISTS laposte_commune_code_postal ; 
+	CREATE TABLE laposte_commune_code_postal (
+	gid serial primary key, 
+	code_commune_INSEE text  ,
+	nom_commune text,
+	code_postal text 
+	); 
+	COPY laposte_commune_code_postal (code_commune_INSEE, nom_commune, code_postal ) FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/laposte_correspondance_code_postal_nom_commune.csv' DELIMITER ';' CSV HEADER;
+	CREATE INDEX ON laposte_commune_code_postal USING GIN (nom_commune gin_trgm_ops) ; 
+	CREATE INDEX ON laposte_commune_code_postal (code_postal) ; 
+	SELECT *
+	FROM laposte_commune_code_postal
+	LIMIT 100 ; 
 
 	SELECT *
 	FROM ign_bdtopo_abbreviations ; 
@@ -53,13 +64,14 @@
 		 
 		--remove road axis that are not in paris 
 		--remove number that are not in paris
- 
+
+/*
 		DELETE FROM  ign_bdadresse_axis_src
 		WHERE code_posta NOT ILIKE '75%'  ; 
 
 		DELETE FROM  ign_bdadresse_src
 		WHERE code_posta NOT ILIKE '75%'  ; 
-  
+*/
 
 -- add relevant entry into geohistorical_object schema : `historical_source` and `numerical_origin_process`
 
@@ -128,17 +140,14 @@
 
 	DROP TABLE IF EXISTS ign_paris_relation ;
 	CREATE TABLE ign_paris_relation (
-	) INHERITS (normalised_name_alias) ;
+	) INHERITS (geohistorical_relation) ;
 
  
-	-- register this new tables
-	SELECT geohistorical_object.register_geohistorical_object_table
-
-
-	SELECT geohistorical_object.register_geohistorical_object_table(  'ign_paris', 'ign_paris_axis'::regclass)	 
-		, geohistorical_object.register_geohistorical_object_table(  'ign_paris', 'ign_france_town'::regclass)	 
-		, geohistorical_object.register_geohistorical_object_table(  'ign_paris', 'ign_paris_number'::regclass)
-		, geohistorical_object.register_geohistorical_object_table(  'ign_paris', 'ign_paris_relation'::regclass) ;
+	-- register this new tables  
+	SELECT geohistorical_object.register_geohistorical_object_table(  'ign_paris', 'ign_paris_axis'::text)	 
+		, geohistorical_object.register_geohistorical_object_table(  'ign_paris', 'ign_france_town'::text)	 
+		, geohistorical_object.register_geohistorical_object_table(  'ign_paris', 'ign_paris_number'::text)
+		, geohistorical_object.register_geohistorical_object_table(  'ign_paris', 'ign_paris_relation'::text) ;
 
 
 
@@ -185,7 +194,7 @@
 	INSERT INTO ign_france_town
 		SELECT nom_com
 			, 'commune '|| clean_text(replace(nom_com, '-', ' ')) 
-			, geom
+			, ST_SnapToGrid(ST_SimplifyPreserveTopology(geom,50),1)
 			, NULL
 			, NULL
 			, 'ign_commune_geofla'
@@ -194,7 +203,7 @@
 	 FROM ign_commune_src  ;  
 
 	 
-	UPDATE ign_france_town SET specific_spatial_precision = (ST_MinimumBoundingRadius(geom)).radius ;
+	--UPDATE ign_france_town SET specific_spatial_precision = (ST_MinimumBoundingRadius(geom)).radius ;
 	 
 
 -- preparing to fill the axis table
@@ -204,13 +213,9 @@
 	SELECT *
 	FROM ign_bdadresse_axis_src
 	WHERE nom_rue_dr IS NOT NULL
-	LIMIT 10
+	LIMIT 10 ; 
 
-	SELECT type_voie, count(*) as c , max(nom_1888)
-	FROM ign_bdadresse_axis_src
-	GROUP BY type_voie
-	ORDER BY type_voie; 
-
+	
 	WITH first_word AS (
 		SELECT fw ,nom_rue_dr 
 		FROM ign_bdadresse_axis_src
@@ -225,7 +230,7 @@
 
 	-- translation of abbreviation is in 'ign_bdtopo_abbreviations'
 	SELECT *
-	FROM ign_bdtopo_abbreviations
+	FROM ign_bdtopo_abbreviations ; 
 
 	-- insert axis (if different name on left and right, insert it 2 times)
 
@@ -233,7 +238,7 @@
 	INSERT INTO ign_paris_axis (historical_name, normalised_name, geom, specific_fuzzy_date, specific_spatial_precision, historical_source, numerical_origin_process, gid, clef_bdtopo ) 
 		SELECT 
 			nom_rue_dr
-			, clean_text(nom_rue_dr) 
+			, clean_text(nom_rue_dr) ||', ' || nom_commune
 			,geom
 			, sfti_makesfti((daterec::date - '1 year'::interval)::date,daterec::date, '2015/01/01'::date,'2016/06/01'::date)--daterec
 			, NULL::float
@@ -242,18 +247,24 @@
 			, gid 
 			,cleabs  
 		FROM (
-			SELECT nom_rue_dr, geom, daterec, gid, cleabs
-			FROM ign_bdadresse_axis_src
-			WHERE nom_rue_dr ILIKE nom_rue_ga
+			SELECT DISTINCT ON (src.gid, la.gid ) nom_rue_dr, geom, daterec, src.gid, cleabs, la.nom_commune
+			FROM ign_bdadresse_axis_src AS src
+				LEFT OUTER JOIN laposte_commune_code_postal AS la ON (src.code_posta = la.code_postal)
+			WHERE (nom_rue_dr ILIKE nom_rue_ga
 			OR nom_rue_dr IS NULL OR nom_rue_ga IS  NULL
+			)  
 		UNION ALL   --because road name on left and on right side may not be the same, we duplicate the road that have several name
-			SELECT nom_rue_dr, geom, daterec, gid, cleabs
-			FROM   ign_bdadresse_axis_src
+			SELECT DISTINCT ON (src.gid, la.gid) nom_rue_dr, geom, daterec, src.gid, cleabs, la.nom_commune
+			FROM   ign_bdadresse_axis_src as src
+				LEFT OUTER JOIN laposte_commune_code_postal AS la ON (src.code_posta = la.code_postal)
 			WHERE nom_rue_dr NOT ILIKE  nom_rue_ga
+				AND src.code_posta ILIKE la.code_postal
 		UNION ALL 
-			SELECT nom_rue_ga AS nom_rue_dr, geom, daterec, gid, cleabs
-			FROM   ign_bdadresse_axis_src
+			SELECT DISTINCT ON (src.gid, la.gid) nom_rue_ga AS nom_rue_dr, geom, daterec, src.gid, cleabs, la.nom_commune
+			FROM   ign_bdadresse_axis_src AS src
+				LEFT OUTER JOIN laposte_commune_code_postal AS la ON (src.code_posta = la.code_postal)
 			WHERE nom_rue_dr NOT ILIKE nom_rue_ga 
+				AND src.code_posta ILIKE la.code_postal
 		) AS sub  ;
  
 	--now we need to correct the inserted axis so they dont use the sshortening in normalised_name
@@ -270,7 +281,9 @@
 	FROM potential_abbr AS pa
 		LEFT OUTER JOIN ign_bdtopo_abbreviations AS ig ON (pa.fw ILIKE ig.abbreviation) 
 	LIMIT 100 ; 
- 
+
+
+	-- replacing the shortening in the adresses
 	WITH to_be_updated_1 AS (
 		SELECT  pa.historical_name, pa.gid, pa.geom, normalised_name, fw, abbreviation, nom_complet , postfix
 		FROM ign_paris_axis AS pa
@@ -283,13 +296,14 @@
 	)  
 	UPDATE ign_paris_axis AS pa SET normalised_name =  cv.nom_complet || postfix 
 	FROM to_be_updated_1 AS cv
-	WHERE pa.gid = cv.gid AND pa.normalised_name = cv.normalised_name AND pa.geom = cv.geom; 
+	WHERE pa.gid = cv.gid AND pa.geom = cv.geom; 
+	
 
-
+	--41905
 	SELECT *
 	FROM ign_paris_axis
 	WHERE normalised_name is not null
-	LIMIT 100 ; 
+	LIMIT 1000 ; 
 
 
 
@@ -300,13 +314,13 @@
 	FROM ign_bdadresse_src AS num 
 		 LEFT OUTER JOIN ign_paris_axis AS ax ON(num.lien_objet = ax.clef_bdtopo ) 
 	 WHERE ax.gid IS NULL
-	LIMIT 1  ; 
+	LIMIT 1  ;
 
 	TRUNCATE ign_paris_number ;
 	INSERT INTO ign_paris_number (historical_name, normalised_name, geom, specific_fuzzy_date, specific_spatial_precision, historical_source, numerical_origin_process, gid, clef_bdtopo ) 
 		SELECT DISTINCT ON (ad.gid)  
 			numero || ' ' || ad.nom_voie
-			,numero || ' ' || COALESCE(clean_text(ax.normalised_name), ad.nom_voie)
+			,numero || ' ' || COALESCE( ax.normalised_name , ad.nom_voie)  
 			, ad.geom
 			, CASE WHEN daterec IS NULL THEN NULL ELSE  sfti_makesfti((daterec::date - '1 year'::interval)::date,daterec::date, '2015/01/01'::date,'2016/06/01'::date)END
 			, NULL
@@ -315,8 +329,9 @@
 			, ad.gid
 			, ad.lien_objet  
 		FROM ign_bdadresse_src AS ad
+			LEFT OUTER JOIN laposte_commune_code_postal AS la ON (ad.code_posta = la.code_postal)
 			, ign_paris_axis AS ax 
-		WHERE ad.lien_objet = ax.clef_bdtopo  ; 
+		WHERE ad.lien_objet = ax.clef_bdtopo  ;  
 			--AND ax.normalised_name IS NOT NULL ; 
 
 

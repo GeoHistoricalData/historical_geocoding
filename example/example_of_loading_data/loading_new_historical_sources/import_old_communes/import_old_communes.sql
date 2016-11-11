@@ -12,15 +12,15 @@
 
 
 --charger les données dans la base avec shp2pgsql
-    -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/bertrand/history_communes.shp cassini_commune_france.cassini_commune_src  > /tmp/tmp_cas.sql ;
-    --  psql -d geocodage_historique -f /tmp/tmp_cas.sql ;
+    -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/history_communes.shp cassini_commune_france.cassini_commune_src  > /tmp/tmp_cas.sql ;
+    --  psql -d test_geocodage -f /tmp/tmp_cas.sql ;
 	ALTER TABLE cassini_commune_src ALTER COLUMN geom TYPE geometry(multipolygon,2154) USING ST_SetSRID(geom,2154)  ; 
 	
    
    SELECT *
    FROM cassini_commune_src as cas
    WHERE cas.start IS NULL
-   LIMIT 100
+   LIMIT 100 ; 
 
 	
 
@@ -75,16 +75,16 @@ INSERT INTO geohistorical_object.numerical_origin_process VALUES
 		FROM cassini_commune_src as cas ; 
  
 
-	UPDATE cassini_town SET specific_spatial_precision = (ST_MinimumBoundingRadius(geom)).radius ; 
+--	UPDATE cassini_town SET specific_spatial_precision = (ST_MinimumBoundingRadius(geom)).radius ; 
 
-	
+
 	SELECT  nom, code_insee, cas.start, cas.end, geom  
-   FROM cassini_commune_src as cas
-   LIMIT 1  ; 
+	FROM cassini_commune_src as cas
+	LIMIT 1  ; 
 
-   SELECT *
-   FROM cassini_town
-   LIMIT 100 ;  
+	SELECT *
+	FROM cassini_town
+	LIMIT 100 ;  
 
-   SELECT distinct historical_source, numerical_origin_process
-   FROM rough_localisation  ; 
+	SELECT distinct historical_source, numerical_origin_process
+	FROM rough_localisation  ; 

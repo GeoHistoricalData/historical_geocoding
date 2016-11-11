@@ -12,11 +12,13 @@
 	CREATE SCHEMA IF NOT EXISTS apur_paris;
 	SET search_path to apur_paris, historical_geocoding, geohistorical_object, public; 
 
+-- YOU NEED TO IMPORT IGNF SPATIAL REF SYS
+-- you can find https://github.com/Remi-C/IGN_spatial_ref_for_PostGIS/Put_IGN_SRS_into_Postgis.sql
 
 
 -- importing the APUR sHape file
-	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/EHESS/GIS_maurizio/PARCELLAIRE_APUR_TOTAL/Quartiers_apur.shp apur_paris.apur_quartier_paris_src  >> /tmp/tmp_apur.sql ;
-	-- psql -d geocodage_historique -f /tmp/tmp_apur.sql  ;
+	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/Quartiers_apur.shp apur_paris.apur_quartier_paris_src  >> /tmp/tmp_apur.sql ;
+	-- psql -d test_geocodage -f /tmp/tmp_apur.sql  ;
 	ALTER TABLE apur_quartier_paris_src ALTER COLUMN GEOM TYPE geometry(multipolygon,2154) USING ST_Transform(ST_SetSRID(geom,932001),2154) ; 
 
 	SELECT *
@@ -64,15 +66,14 @@
 	INSERT INTO apur_paris_quartier
 	SELECT  
 		l_qu
-		, 'quartier '|| clean_text(l_qu)
+		, 'quartier '|| clean_text(l_qu) || ' , Paris' 
 		,geom
 		, NULL
-		, radius
+		, NULL
 		,'apur_paris_quartier'
 		,'apur_paris_quartier_process'
 		,gid 
-	FROM apur_quartier_paris_src
-		, ST_MinimumBoundingRadius(geom) as f ;  
+	FROM apur_quartier_paris_src ; 
 
 		SELECT DISTINCT historical_source, numerical_origin_process
 		FROM rough_localisation ; 

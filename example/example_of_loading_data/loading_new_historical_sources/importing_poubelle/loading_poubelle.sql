@@ -9,7 +9,7 @@
 
 -- preparer la base de données
   --creer extensions
-  CREATE EXTENSION IF NOT EXISTS postgis ; 
+  -- CREATE EXTENSION IF NOT EXISTS postgis ; 
 
 	-- le referentiel a utiliser est le lambert 93 : EPSG:2154
 	SELECT *
@@ -23,13 +23,13 @@
     SET search_path to poubelle_paris, historical_geocoding, geohistorical_object, public; 
 
   --charger les données dans la base avec shp2pgsql
-    -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/reseau_routier_benoit_20160701/poubelle_TEMPORAIRE_emprise_utf8_L93_v2.shp poubelle_paris.poubelle_src  > /tmp/tmp_poublelle.sql ;
-    --  psql -d geocodage_historique -f /tmp/tmp_poublelle.sql ;
+    -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/poubelle_TEMPORAIRE_emprise_utf8_L93_v2.shp poubelle_paris.poubelle_src | psql -d test_geocodage;
 
-     -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/reseau_routier_benoit_20160701/poubelle_TEMPORAIRE.shp poubelle_paris.poubelle_src_2  > /tmp/tmp_poubelle2.sql ;
-    --  psql -d geocodage_historique -f /tmp/tmp_poubelle2.sql ;
+     -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/poubelle_TEMPORAIRE.shp poubelle_paris.poubelle_src_2 | psql -d test_geocodage;
+
+	ALTER TABLE poubelle_paris.poubelle_src ALTER COLUMN geom TYPE geometry(multilinestring,2154) USING ST_SetSRID(geom,2154)  ;
 	ALTER TABLE poubelle_paris.poubelle_src_2 ALTER COLUMN geom TYPE geometry(multilinestring,2154) USING ST_SetSRID(geom,2154)  ;
-    
+
   -- la table poubelle_src est maintenant remplie
   -- la table poubelle_src_2 aussi : elle contient plus de données, mais moins précise. 
   -- we fuse poubelle_src and poubelle_sr_2, by taking in priority poubelle_src and completing it with poubelle_src_2 
@@ -42,24 +42,23 @@
  
 
 		--now , creating the spatial limit of poubelle_src, adding row of poubelle_src_2 that are not withint his limit. 
-		DROP TABLE IF EXISTS temp_test_visu ;
-		CREATE TABLE IF NOT EXISTS temp_test_visu AS
-		
-		WITH fermiers_generaux AS (
-		
+		WITH fermiers_generaux AS ( 
 			SELECT ST_MakePolygon(ST_ExteriorRing(ST_GeometryN(ST_Union(ST_Buffer(geom,5,'quad_segs=2')),1)) )as src_bounding
 			FROM poubelle_src
 			LIMIT 1 
-		) 
+		)
 		INSERT INTO poubelle_src_merged (nom_1888, type_voie, particule, nom_voie, adr_fg88, adr_fd88, adr_dg88, adr_dd88, id, geom ) 
 		SELECT nom_1888, type_voie, particule, nom_voie, adr_fg88, adr_fd88, adr_dg88, adr_dd88, id, geom 
 		FROM fermiers_generaux AS fg, poubelle_src_2 AS p2
 			, ST_Buffer(p2.geom,5) as ngeom
 			, CAST( St_Area(ST_Intersection(fg.src_bounding,ngeom)) / ST_Area(ngeom)AS float)  as shared_surf
-		WHERE shared_surf < 0.9  ; 
+		WHERE shared_surf < 0.9 ;
 
-		
- 
+		SELECT *
+		FROM poubelle_src_merged
+		LIMIT 100 ;
+
+
     --creation d'une vue pour voir les endroits problématiques
       --vue sur les rue homonymes 
         DROP VIEW IF EXISTS poubelle_compte_homonyme  ; 
@@ -74,12 +73,12 @@
 		FROM poubelle_src
 		WHERE nom_1888 IS NULL ; 
 
-        --UTILISER outils_geocodage.numerotation2float()
+        --UTILISER historical_geocoding.numerotation2float()
   
       --vue sur les rue dont les numéros d'adresses contiennent un 0 (signe d'inconnaissance) ou un NULL (signe d'un probleme)
 		SELECT *
-		FROM poubelle_src , outils_geocodage.numerotation2float(adr_fg88) AS fg, outils_geocodage.numerotation2float(adr_fd88) AS fd
-			, outils_geocodage.numerotation2float(adr_dg88) AS dg, outils_geocodage.numerotation2float(adr_dd88) AS dd ; 
+		FROM poubelle_src , historical_geocoding.numerotation2float(adr_fg88) AS fg, historical_geocoding.numerotation2float(adr_fd88) AS fd
+			, historical_geocoding.numerotation2float(adr_dg88) AS dg, historical_geocoding.numerotation2float(adr_dd88) AS dd ; 
 		-- WHERE adr_fg88::int = 0 OR adr_fg88::int IS NULL OR adr_fd88::int = 0 OR adr_fd88::int IS NULL OR adr_dg88::int = 0 OR adr_dg88::int IS NULL OR adr_dd88::int = 0 OR adr_dd88::int IS NULL
       --vue verification que les numerotations gauche et droites sont bien croissantes
         SELECT *
@@ -95,25 +94,26 @@
 	   SELECT gid, adr_fd88 FROM poubelle_src  
 	  )
 -- 	  SELECT  suffixe, count(*)
--- 	  FROM tous_les_numeros, outils_geocodage.normaliser_numerotation(numerotation)
+-- 	  FROM tous_les_numeros, historical_geocoding.normaliser_numerotation(numerotation)
 -- 	  WHERE suffixe is not null
 -- 	  group by suffixe
 -- 	  ORDER BY suffixe ASC
 	  
 	  SELECT  numerotation, count(*) as n_occurence 
 		, norm.*
-		, outils_geocodage.numerotation2float(numerotation)
-	  FROM tous_les_numeros, outils_geocodage.normaliser_numerotation(numerotation) as norm
+		, historical_geocoding.numerotation2float(numerotation)
+	  FROM tous_les_numeros, historical_geocoding.normaliser_numerotation(numerotation) as norm
 	  GROUP BY numerotation, norm.numero, norm.suffixe
 	  ORDER BY n_occurence DESC, numerotation;  
 
 
-
+SELECT *
+FROM geohistorical_object.historical_source ; 
 
 
 	-- add relevant entry into geohistorical_object schema : `historical_source` and `numerical_origin_process`
 
-		/*  
+  
 	 
 			INSERT INTO  geohistorical_object.historical_source  VALUES
 			('poubelle_municipal_paris'
@@ -136,9 +136,9 @@
 			, sfti_makesfti(1887, 1888, 1888, 1889)
 			,  '{"default": 4, "road_axis":2.5, "building":1, "number":2}'::json 
 			) ; 
-		*/
+	 
 
-		/*
+	 
 			INSERT INTO geohistorical_object.numerical_origin_process VALUES
 			('poubelle_paris_axis_audela_fermiers_generaux'
 				, 'The axis were manually created by people from geohistorical data project, but not ufrther corrected/validated by Benoit Combes'
@@ -162,8 +162,7 @@
 				details on data : rules of creation, validation process, known limitations, etc. '
 				, sfti_makesfti(2012, 2012, 2016, 2016)  -- date of data creation
 				, '{"default": 1, "road_axis":3, "building":0.5, "number":1.5, "number_semantic":0.9}'::json) --precision
-		*/	
-
+	 
 	
 
 --analysis of poubelle road axis name : 
@@ -240,7 +239,7 @@
 	
 	DROP TABLE IF EXISTS poubelle_axis CASCADE; 
 	CREATE TABLE poubelle_axis(
-		gid serial primary key REFERENCES poubelle_src(gid)
+		gid serial primary key REFERENCES poubelle_src_merged(gid)
 	) INHERITS (rough_localisation) ;  
 	TRUNCATE poubelle_axis CASCADE ; 
 
@@ -252,15 +251,15 @@
 	TRUNCATE poubelle_number CASCADE ; 
 	
 
-	DROP TABLE IF EXISTS poubelle_alias ;
-	CREATE TABLE poubelle_alias (
-	) INHERITS (normalised_name_alias) ;
+	DROP TABLE IF EXISTS poubelle_relations ;
+	CREATE TABLE poubelle_relations (
+	) INHERITS (geohistorical_relation) ;
 
  
 	-- register this new tables
 		 SELECT geohistorical_object.register_geohistorical_object_table('poubelle_paris','poubelle_axis'::regclass)	 
 			, geohistorical_object.register_geohistorical_object_table('poubelle_paris','poubelle_number'::regclass)
-			, geohistorical_object.register_geohistorical_object_table('poubelle_paris','poubelle_alias'::regclass) ;
+			, geohistorical_object.register_geohistorical_object_table('poubelle_paris','geohistorical_relation'::regclass) ;
 
 	--index whats necessary
 		-- creating indexes 
@@ -295,14 +294,18 @@
 	
 	INSERT INTO poubelle_axis 
 	SELECT nom_1888 AS historical_name
-			,geohistorical_object.clean_text(nom_1888)   AS normalised_name
-			,geom AS geom
-			,NULL AS specific_fuzzy_date
-			,NULL AS specific_spatial_precision 
+			, nom_1888 || ', Paris' AS normalised_name
+			, geom AS geom
+			, NULL AS specific_fuzzy_date
+			, NULL AS specific_spatial_precision 
 			, 'poubelle_municipal_paris' AS historical_source
 			, 'poubelle_paris_axis' AS numerical_origin_process
 			, gid
 	FROM poubelle_src_merged   ; 
+
+	SELECT *
+	FROM poubelle_axis
+	LIMIT 100 ; 
 
  
 
@@ -334,13 +337,12 @@
 	--getting approximate road width:
 		--load data 
 		CREATE SCHEMA IF NOT EXISTS bdtopo_x_streetgen_x_odparis ; 
-		--	/usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/street_gen/streetgen_recalle_tout_paris.shp bdtopo_x_streetgen_x_odparis.bdtopo_reregistered  > /tmp/tmp_poublelle.sql ;
-		--  psql -d geocodage_historique -f /tmp/tmp_poublelle.sql ;
+		--	/usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/streetgen_recalle_tout_paris.shp bdtopo_x_streetgen_x_odparis.bdtopo_reregistered  | psql -d test_geocodage;
 
 		SELECT *
 		FROM bdtopo_x_streetgen_x_odparis.bdtopo_reregistered 
 		LIMIT 10; 
-
+ 
 		INSERT INTO public.spatial_ref_sys (srid,auth_name, auth_srid, srtext,proj4text) values (932011,'Remi_C',310024140,'PROJCS["Lambert 93__offseted_Paris",GEOGCS["Réseau géodésique français 1993",DATUM["Réseau géodésique français 1993",SPHEROID["IAG GRS 1980",6378137.0000,298.2572221010000,AUTHORITY["IGNF","ELG037"]],TOWGS84[0.0000,0.0000,0.0000,0,0,0,0],AUTHORITY["IGNF","REG024"]],PRIMEM["Greenwich",0.000000000,AUTHORITY["IGNF","LGO01"]],UNIT["degree",0.01745329251994330],AXIS["Longitude",EAST],AXIS["Latitude",NORTH],AUTHORITY["IGNF","RGF93G"]],PROJECTION["Lambert_Conformal_Conic_2SP",AUTHORITY["IGNF","PRC0140"]],PARAMETER["semi_major",6378137.0000],PARAMETER["semi_minor",6356752.3141],PARAMETER["latitude_of_origin",46.500000000],PARAMETER["central_meridian",3.000000000],PARAMETER["standard_parallel_1",44.000000000],PARAMETER["standard_parallel_2",49.000000000],PARAMETER["false_easting",700000.000],PARAMETER["false_northing",6600000.000],UNIT["metre",1],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["IGNF","LAMB93"]]','+init=IGNF:LAMB93 +x_0=51000 +y_0=-240000');
 
 
@@ -363,7 +365,8 @@
 			gid serial REFERENCES poubelle_axis(gid)
 			, geom geometry(multilinestring,2154)
 			, approx_road_width float
-			) ; 
+			); 
+			
 
 			INSERT INTO poubelle_axis_approx_width
 			SELECT gid, max( geom) as geom, sum(road_width * shared_surf_perc) / sum(shared_surf_perc) AS wwidth
@@ -379,20 +382,24 @@
 				ORDER BY pa.gid, bdtopo.gid, shared_surf_perc DESC 
 				) AS unique_poubelle_bdtopo  
 			GROUP BY  gid ; 
+
+			SELECT count(*)
+			FROM poubelle_axis_approx_width ; 
+			
 			-- approx road width is now in poubelle_axis_approx_width
 	-- now dealing with missing numbers
 		--on all poubelle road axis segment, how much have correct numbering information?
 		WITH all_numbers AS (
-		SELECT adr_dg88 beg , adr_fg88 en, geom, id, nom_1888, 'left' side
-		FROM poubelle_src
-		UNION ALL 
-		SELECT adr_dd88, adr_fd88, geom, id, nom_1888, 'right' side
-		FROM poubelle_src
+			SELECT adr_dg88 beg , adr_fg88 en, geom, id, nom_1888, 'left' side
+			FROM poubelle_src
+			UNION ALL 
+			SELECT adr_dd88, adr_fd88, geom, id, nom_1888, 'right' side
+			FROM poubelle_src
 		)
 		SELECT count(*) --7127/13732 road axis segment side have complete information for number generation
 		FROM all_numbers 
-		WHERE outils_geocodage.numerotation2float(beg) != 0 AND outils_geocodage.numerotation2float( en) != 0 
-			AND outils_geocodage.numerotation2float(beg) != -1 AND outils_geocodage.numerotation2float(en) != 61
+		WHERE historical_geocoding.numerotation2float(beg) != 0 AND historical_geocoding.numerotation2float( en) != 0 
+			AND historical_geocoding.numerotation2float(beg) != -1 AND historical_geocoding.numerotation2float(en) != 61
 			AND beg IS NOT NULL AND en IS NOT NULL; 
 
 
@@ -455,8 +462,8 @@
 			SELECT pb.id, pb.geom as road_axis
 				, COALESCE(approx.approx_road_width, 9.5::float) as approx_road_width
 				, true AS is_left_side
-				, outils_geocodage.numerotation2float(adr_dg88) AS start_number
-				, outils_geocodage.numerotation2float(adr_fg88) AS end_number
+				, historical_geocoding.numerotation2float(adr_dg88) AS start_number
+				, historical_geocoding.numerotation2float(adr_fg88) AS end_number
 				, 2 AS  sidewalk_width 
 				, 10.0 AS  offset_position
 			FROM poubelle_src_merged  AS pb LEFT OUTER JOIN poubelle_axis_approx_width as approx ON  (approx.gid = pb.gid::int) 
@@ -484,8 +491,8 @@
 			)
 			SELECT al.gid, nom_1888,normalised_name,historical_name, f.*
 			FROM  all_sides AS al
-				, outils_geocodage.numerotation2float(start_number  ) AS sn
-				, outils_geocodage.numerotation2float(end_number) AS en
+				, historical_geocoding.numerotation2float(start_number  ) AS sn
+				, historical_geocoding.numerotation2float(end_number) AS en
 				, poubelle_paris.generate_numbers_points(
 					road_axis  
 					, approx_road_width 
@@ -517,8 +524,8 @@
 					,fg88 ,dg88, fd88,  dd88
 					, geom
 				FROM poubelle_src_merged
-					, CAST(outils_geocodage.numerotation2float(adr_fg88) AS int) AS fg88 , CAST(outils_geocodage.numerotation2float(adr_fd88) AS int) AS fd88 
-					,CAST(outils_geocodage.numerotation2float(adr_dg88)AS int) AS dg88 , CAST(outils_geocodage.numerotation2float(adr_dd88) AS int) AS dd88 
+					, CAST(historical_geocoding.numerotation2float(adr_fg88) AS int) AS fg88 , CAST(historical_geocoding.numerotation2float(adr_fd88) AS int) AS fd88 
+					,CAST(historical_geocoding.numerotation2float(adr_dg88)AS int) AS dg88 , CAST(historical_geocoding.numerotation2float(adr_dd88) AS int) AS dd88 
 				WHERE ( fg88 != 0 OR dg88!=0) AND ( fd88 != 0 OR dd88!=0) 
 					AND (fg88 != -1 AND dg88!= -1 AND fd88 != -1 AND dd88 != -1) 
 			)
@@ -543,8 +550,8 @@
 		, associated_normalised_rough_name
 		-- , gid 
 		 ,  road_axis_id )
-		SELECT outils_geocodage.float2numerotation(numbers_value) || ' '|| historical_name AS historical_name
-			,   outils_geocodage.float2numerotation(numbers_value) || ' ' ||  normalised_name  AS normalised_name
+		SELECT historical_geocoding.float2numerotation(numbers_value) || ' '|| historical_name AS historical_name
+			,   historical_geocoding.float2numerotation(numbers_value) || ' ' ||  normalised_name  AS normalised_name
 			,number_geom AS geom
 			,NULL AS specific_fuzzy_date
 			,NULL AS specific_spatial_precision 
@@ -554,11 +561,11 @@
 			,   gid
 		FROM  
 			test_generating_number
-			WHERE numbers_value is not null ; 
+			WHERE numbers_value is not null ;
 
 			SELECT *
 			FROM poubelle_number
-			LIMIT 100 ; 
+			LIMIT 100 ;
  /*
 -- NOTE : to properly generate numbers, we should 
 		  
