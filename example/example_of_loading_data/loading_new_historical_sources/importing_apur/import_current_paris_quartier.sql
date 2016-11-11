@@ -17,8 +17,7 @@
 
 
 -- importing the APUR sHape file
-	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/Quartiers_apur.shp apur_paris.apur_quartier_paris_src  >> /tmp/tmp_apur.sql ;
-	-- psql -d test_geocodage -f /tmp/tmp_apur.sql  ;
+	-- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/Quartiers_apur.shp apur_paris.apur_quartier_paris_src | psql -d test_geocodage ;
 	ALTER TABLE apur_quartier_paris_src ALTER COLUMN GEOM TYPE geometry(multipolygon,2154) USING ST_Transform(ST_SetSRID(geom,932001),2154) ; 
 
 	SELECT *
