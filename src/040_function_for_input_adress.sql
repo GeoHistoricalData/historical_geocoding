@@ -2,7 +2,7 @@
 -- Remi Cura, 2016 , Projet Belle Epoque
 ------------------------
 		--using libpostal 
-		CREATE EXTENSION IF NOT EXISTS postal 
+	--	CREATE EXTENSION IF NOT EXISTS postal 
 -- part 1 : deal with input adress query
 -- the input query should be normalised and matched against database
 -- in the normalise step, we should 
@@ -81,7 +81,7 @@ Part 1
 		
 	---------- 1.1.2 Parse and normalise adress and date	 --------
 	---------- 1.1.2.1 parse/normalise adress			 --------
-
+/*
 
 		WITH norm as (
 		SELECT adress_query  
@@ -95,7 +95,7 @@ Part 1
 			, jsonb_extract_path_text(f,'house_number'::text)
 		FROM norm ;
 
-
+*/
 		
 		DROP FUNCTION IF EXISTS historical_geocoding.normalise_parse_adress(adress_query text, IN default_city TEXT , OUT city text, out road_name text, out house_number text) ;
 		CREATE OR REPLACE FUNCTION historical_geocoding.normalise_parse_adress(adress_query text, IN default_city text DEFAULT 'PARIS', OUT city text, out road_name text, out house_number text) AS 
@@ -123,10 +123,11 @@ Part 1
 		END ; 
 		$$
 		LANGUAGE 'plpgsql' IMMUTABLE STRICT ; 
-
+/*
 		SELECT f.*
 		FROM  test_extension.example_adress_query as q 
 			, historical_geocoding.normalise_parse_adress(adress_query, 'PARIS'::text) as f ; 
+			*/
 
 	---------- 1.1.2.2 parse/normalise date 				 --------
 		--for the moment, we only allow simple date as input (XXXX).
@@ -175,13 +176,16 @@ Part 1
 -------- 1.2 : Match ------------
 	--complete system  : the database has already been filled with various historical and current data
 		--getting test data : 
+		/*
 		SELECT gid, adresse,   city, road_name, house_number
 			FROM test_extension.test_sample_adress 
 				, historical_geocoding.normalise_parse_adress(replace(adresse, ' R ',' rue ')|| ', Paris', 'Paris')  
 			LIMIT 100 ; 
+			*/
 
 	---------- 1.2.1 match street /city name 				 --------
 		--testing to find a street name :
+		/*
 		WITH input_adress AS (
 			SELECT gid, adresse,   city, road_name, house_number, fuzzy_date
 			FROM test_extension.test_sample_adress 
@@ -193,8 +197,10 @@ Part 1
 		WHERE road_name % normalised_name
 		ORDER BY road_name <-> normalised_name 
 		LIMIT 100;
+		*/
 
 		--testing to find a city
+		/*
 		WITH input_adress AS (
 			SELECT gid, adresse,   city, road_name, house_number, fuzzy_date
 			FROM test_extension.test_sample_adress 
@@ -206,6 +212,8 @@ Part 1
 		WHERE city % normalised_name
 		ORDER BY city <-> normalised_name 
 		LIMIT 100;
+		*/
+		
 
 		--testing to find a quartier :
 		WITH input_adress AS (
@@ -235,7 +243,7 @@ Part 1
 	---------- 1.2.3 match numbering 					 --------
 		--testing the numbering match
 		--numbering result is an union of 2 results
-		
+		/*
 		WITH input_adress AS ( 
 			SELECT gid, adresse,   city, road_name, house_number, fuzzy_date, house_number ||  ' ' ||road_name AS norm_adress
 			FROM test_extension.test_sample_adress 
@@ -248,7 +256,7 @@ Part 1
 			-- AND numrange(0::numeric,(ST_MinimumBoundingRadius(geom)).radius::numeric) <-> numrange(0,30)
 		ORDER BY norm_adress <-> normalised_name 
 		LIMIT 30  ;
- 
+		*/
 		
 /*
 DROP TABLE IF EXISTS test_geocoding_coulisse ; 

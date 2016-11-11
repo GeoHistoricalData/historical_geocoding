@@ -83,7 +83,7 @@ RETURNS table(rank int,
 				, COALESCE(ST_Distance($4::geometry, rl.geom),0) AS spatial_distance
 				, postal_parse($1) as parsed_iadress
 				, postal_parse(normalised_name) as parsed_adress
-				, outils_geocodage.number_distance(parsed_iadress->>''house_number'', parsed_adress->>''house_number'') as number_distance
+				, historical_geocoding.number_distance(parsed_iadress->>''house_number'', parsed_adress->>''house_number'') as number_distance
 				, CAST ( %3$s AS float) AS aggregated_score
 				
 			WHERE 
@@ -127,9 +127,9 @@ FROM historical_geocoding.geocode_name_base(
  SELECT *
  FROM  postal_parse('11 rue de la paix, Paris') as parsed_iadress
 	, postal_parse('11 rue de la paix') as parsed_adress
-	, outils_geocodage.number_distance(parsed_iadress->>'house_number', parsed_adress->>'house_number') as number_distance ; 
+	, historical_geocoding.number_distance(parsed_iadress->>'house_number', parsed_adress->>'house_number') as number_distance ; 
 
-SELECT outils_geocodage.number_distance('11', '11') ;
+SELECT historical_geocoding.number_distance('11', '11') ;
 		
 DROP FUNCTION IF EXISTS historical_geocoding.geocode_name_optimised_inter( 
 	query_adress text, query_date sfti, use_precise_localisation boolean

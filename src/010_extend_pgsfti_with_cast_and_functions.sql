@@ -7,8 +7,8 @@
 -- from extension 'pgsfti'
 -- with casting for ease of use
 
-	CREATE EXTENSION IF NOT EXISTS pgsfti ; 
-	CREATE EXTENSION IF NOT EXISTS postgis ; 
+	--CREATE EXTENSION IF NOT EXISTS pgsfti ; 
+	--CREATE EXTENSION IF NOT EXISTS postgis ; 
 
 
 

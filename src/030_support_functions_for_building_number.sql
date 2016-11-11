@@ -230,16 +230,16 @@
 	
 	
 
- DROP FUNCTION IF EXISTS outils_geocodage.number_distance(number_1 text, number_2 text, OUT number_dist float) ;
-	CREATE OR REPLACE FUNCTION outils_geocodage.number_distance(number_1 text, number_2 text, OUT number_dist float) AS 
+ DROP FUNCTION IF EXISTS historical_geocoding.number_distance(number_1 text, number_2 text, OUT number_dist float) ;
+	CREATE OR REPLACE FUNCTION historical_geocoding.number_distance(number_1 text, number_2 text, OUT number_dist float) AS 
 	$$
 	DECLARE 
 	BEGIN 
 		SELECT COALESCE(abs(num1-num2) + ((abs(num1::int-num2::int)%2)=1)::int* 10,10::int)  INTO number_dist
-		FROM outils_geocodage.numerotation2float(number_1) AS num1
-			, outils_geocodage.numerotation2float(number_2) AS num2 ;  
+		FROM historical_geocoding.numerotation2float(number_1) AS num1
+			, historical_geocoding.numerotation2float(number_2) AS num2 ;  
 		RETURN ;
 	END; $$ LANGUAGE 'plpgsql' IMMUTABLE CALLED ON NULL INPUT ; 
 
-SELECT outils_geocodage.number_distance('12A','14B') ;
+SELECT historical_geocoding.number_distance('12A','14B') ;
 	
