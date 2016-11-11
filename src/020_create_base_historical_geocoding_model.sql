@@ -21,7 +21,7 @@ CREATE SCHEMA IF NOT EXISTS historical_geocoding ;
 	) INHERITS (geohistorical_object.geohistorical_object ); 
 
 	-- registering the foreign keys :
-	SELECT geohistorical_object.enable_disable_geohistorical_object( 'historical_geocoding', 'rough_localisation'::regclass,true); 
+	SELECT geohistorical_object.register_geohistorical_object_table( 'historical_geocoding', 'rough_localisation'::text); 
 	/*
 	-- example of index, not necessary here because this table will remain empty
 		--geometric index
@@ -42,7 +42,7 @@ CREATE SCHEMA IF NOT EXISTS historical_geocoding ;
 	, check (false) NO INHERIT -- ensure that no data is going to be inserted in this table, it's only a template !!
 	) INHERITS (geohistorical_object.geohistorical_object );  
 	
-	SELECT geohistorical_object.enable_disable_geohistorical_object( 'historical_geocoding', 'precise_localisation'::regclass,true) ; 
+	SELECT geohistorical_object.register_geohistorical_object_table( 'historical_geocoding', 'precise_localisation') ; 
 	 
 -- @TODO  : this indexes should be deleted/created automatically in the enable_disable_geohistorical_object function (which shall be renommed)!
 
