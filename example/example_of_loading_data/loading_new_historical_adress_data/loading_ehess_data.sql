@@ -39,11 +39,11 @@ CREATE TABLE profession_raw (
 ) ;
 
 COPY profession_raw
-FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/ehess/BOTTINS_PROFS_OK.csv'
+FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/data_to_be_geolocalised/BOTTINS_PROFS_OK.csv'
 WITH (FORMAT CSV, HEADER,  DELIMITER ';', ENCODING 'LATIN1'); 
-DELETE FROM profession_raw WHERE nl = 'nl' ; --removing first row withheaders
+ 
 
-
+/*
 -- select set_limit(0.8) ; 
 DROP TABLE IF EXISTS profession_geocoded ; 
 CREATE TABLE profession_geocoded AS 
@@ -71,7 +71,7 @@ FROM profession_raw
 			, optional_spatial_distance_range := NULL -- numrange(0,10000)
 		) as f
 LIMIT 1000 ;
-
+*/
 
 
  
@@ -105,7 +105,7 @@ motif_retranchement text
 
 
 COPY censitaire_raw
-FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/ehess/censitairesParis.csv'
+FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/data_to_be_geolocalised/censitairesParis.csv'
 WITH (FORMAT CSV, HEADER, DELIMITER ';', ENCODING 'LATIN1');
 
 --celaning the iunput adresse, it is written in reverse, with shortenings
@@ -116,7 +116,7 @@ WITH (FORMAT CSV, HEADER, DELIMITER ';', ENCODING 'LATIN1');
 
 
 --SELECT set_limit(0.8)
-
+/*
 DROP TABLE IF EXISTS censitaire_geocoded ; 
 CREATE TABLE censitaire_geocoded AS 
  SELECT orsid, code_elect, nom, prenom, profession, date_naiss, tot_contr, lieu_paiement, lieu_contrib
@@ -138,15 +138,12 @@ CREATE TABLE censitaire_geocoded AS
 			, optional_spatial_distance_range := NULL -- numrange(0,10000)
 		) as f
  LIMIT 1000 ; 
+ */
 
 
  -- geocoding not hte censitaire adress, but rather the censitaier hometown
 
-
- SELECT *
- FROM ehess_data.censitaire_lieu_contrib_geocoded 
- WHERE lieu_contrib ILIKE '%PARIS%'
- LIMIT 1 
+ /* 
 DROP TABLE IF EXISTS ehess_data.censitaire_lieu_contrib_geocoded ; 
 CREATE TABLE IF NOT EXISTS ehess_data.censitaire_lieu_contrib_geocoded  AS
 INSERT INTO ehess_data.censitaire_lieu_contrib_geocoded
@@ -185,7 +182,8 @@ FROM distinct_lieu_contrib AS dlc
 		) AS  f  ; 
 		
 CREATE INDEX ON censitaire_lieu_contrib_geocoded USING GIN(lieu_contrib gin_trgm_ops)  ; 
-
+*/
+/*
 SELECT historical_source, numerical_origin_process, count(*) as tc , sum(c) as sc 
 FROM ehess_data.censitaire_lieu_contrib_geocoded
 GROUP BY historical_source, numerical_origin_process ;
@@ -193,17 +191,15 @@ GROUP BY historical_source, numerical_origin_process ;
 SELECT *
 FROM ehess_data.censitaire_lieu_contrib_geocoded 
 LIMIT 1 ; 
-
+*/
 SELECT *
 FROM ehess_data.censitaire_raw
 WHERE lieu_contrib is not null AND char_length(lieu_contrib) > 3
 LIMIT 1; 
-
-SELECT set_limit(0.9) ;
+ 
 CREATE INDEX ON censitaire_raw USING GIN(lieu_contrib gin_trgm_ops) ; 
 
-
-SELECT set_limit(0.9)
+/*
 DROP TABLE IF EXISTS ehess_data.censitaire_contrib ; 
 CREATE TABLE IF NOT EXISTS ehess_data.censitaire_contrib  AS 
 SELECT DISTINCT ON (cl.lieu_contrib , cr.orsid ) 	
@@ -217,9 +213,10 @@ WHERE (cl.lieu_contrib % cr.lieu_contrib AND char_length(cr.lieu_contrib) > 3 )
 			AND cr.lieu_contrib ~ '^\d+$' AND cl.lieu_contrib % CAST('commune paris '|| cr.lieu_contrib || 'e arrondissement' AS text))
 ORDER BY cl.lieu_contrib , cr.orsid , similarity(cl.lieu_contrib, cr.lieu_contrib) DESC ;
 
- CREATE INDEX ON ehess_data.censitaire_contrib USING GIST(fuzzy_localisation ) ;
+CREATE INDEX ON ehess_data.censitaire_contrib USING GIST(fuzzy_localisation ) ;
+*/
 
-
+/*
 SET search_path to ehess_data, rc_lib, public ; 
 
 DROP TABLE IF EXISTS ehess_data.france_hex_val ;
@@ -263,42 +260,42 @@ SELECT *
 FROM ign_paris.ign_france_town 
 WHERE normalised_name ILIKE '%Paris%'
 LIMIT 1 
-
+*/
 -- now loading another type of data , poeople who get arrested in 1848 after the failed revolution: 
 
 
 DROP TABLE IF EXISTS prevenu_raw ; 
 CREATE TABLE prevenu_raw (
-num_ligne text primary key,
-num_doublon text,
-num_registre text,
-ville text,
-cod_ban text,
-attribut text,
-particule text,
-nom_rue text,
-num_adr text,
-nom text,
-prenom text,
-age text,
-profession text,
-activite text,
-branche text,
-lieu_naiss text,
-dep_naiss text,
-decision text,
-sexe text
+	num_ligne text primary key,
+	num_doublon text,
+	num_registre text,
+	ville text,
+	cod_ban text,
+	attribut text,
+	particule text,
+	nom_rue text,
+	num_adr text,
+	nom text,
+	prenom text,
+	age text,
+	profession text,
+	activite text,
+	branche text,
+	lieu_naiss text,
+	dep_naiss text,
+	decision text,
+	sexe text
 ) ; 
 
 
 
 COPY prevenu_raw
-FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/ehess/prevenus_tous_dec_2012.csv'
+FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/data_to_be_geolocalised/prevenus_tous_dec_2012.csv'
 WITH (FORMAT CSV, HEADER, DELIMITER ';', ENCODING 'LATIN1');
 
 --11644
 
--- select set_limit(0.8)
+/*
 DROP TABLE IF EXISTS prevenu_geocoded ; 
 CREATE TABLE IF NOT EXISTS prevenu_geocoded AS
 SELECT num_ligne, ville
@@ -328,15 +325,8 @@ FROM prevenu_raw
 		) as f
 LIMIT 4000 ; 
  --  SELECT 7741 /8610.0
-
- SELECT count(*)
- FROM prevenu_geocoded
- WHERE ville ilike 'paris' ;
-
- SELECT *
- FROM prevenu_geocoded
- LIMIT 10
-
+*/
+ 
  SELECT count(*)
  FROM prevenu_raw
 , trim(both ' '::text from 
@@ -345,6 +335,6 @@ LIMIT 4000 ;
 		COALESCE(particule, ' '::text)|| ' '::text || 
 		COALESCE(nom_rue, ' '::text)|| ' '::text  ) AS adresse_temp
 	, CAST((postal_normalize(adresse_temp))[1] AS text) as adresse
-	WHERE adresse is not null AND ville ILIKe 'paris'
+	WHERE adresse is not null AND ville ILIKe 'paris' ; 
 
  

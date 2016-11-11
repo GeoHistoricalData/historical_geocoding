@@ -20,7 +20,8 @@ CREATE TABLE felix_bottin.bottin_raw
 
 
 COPY bottin_raw
-FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/theo/felix_bottin/output/names_streets_reworked.json' ;
+FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/data_to_be_geolocalised/epita_extraction_bottin_full_auto.json' ;
+
 
 SELECT raw_content->>'id' bottin_id, raw_content->>'name' street_name, raw_content->>'raw' raw 
 	,regexp_matches(raw_content->>'street number','\[.*?"(.*)".*?]') AS street_number
@@ -44,14 +45,12 @@ CREATE TABLE IF NOT EXISTS bottin_cleaned AS
 	)
 	SELECT *
 		,  sfti_makesfti(years[1]::int -1, years[1]::int , years[array_length(years,1)]::int , years[array_length(years,1)]::int +1) AS fuzzy_date
-	FROM cleaned ; 
+	FROM cleaned ;
 
-SELECT min(gid), max(gid)
-FROM bottin_geocoded
 
 -- starting geocoding : 
 
--- SELECT set_limit(0.4) 
+ /*
 DROP TABLE IF EXISTS bottin_geocoded ;
 CREATE TABLE bottin_geocoded AS 
 -- INSERT INTO bottin_geocoded
@@ -73,20 +72,18 @@ FROM bottin_cleaned
 			, optional_reference_geometry := NULL -- ST_Buffer(ST_GeomFromText('POINT(652208.7 6861682.4)',2154),5)
 			, optional_max_spatial_distance := 10000
 ) AS  f  ;
+*/
 --WHERE gid BETWEEN 4001 AND 4002;  
 -- 37min 37 sec
 -- SELECT 6308 / 6467.0 
-SELECT *
-FROM bottin_geocoded
-	LEFT OUTER JOIN bottin_cleaned USING (gid)
-LIMIT 100 ;
 
-
+/*
 SELECT historical_source, 1.0 *count(*)  / tc  
 FROM bottin_geocoded, (SELECT count(*) tc FROM bottin_geocoded ) as tc 
 GROUP BY tc , historical_source
-LIMIT 100
-
+LIMIT 100 ; 
+*/
+/*
 DROP TABLE IF EXISTS visu_date_input ; 
 CREATE TABLE IF NOT EXISTS visu_date_input  AS
 SELECT row_number() over() AS qgis_id, ST_SetSRID(ST_MakeValid(fuzzy_date::geometry(polygon,0)),2154) AS geom
@@ -94,10 +91,8 @@ FROM bottin_geocoded
 	LEFT OUTER JOIN bottin_cleaned USING (gid)
 LIMIT 100 ;
 ALTER TABLE visu_date_input ADD PRIMARY KEY (qgis_id)  ; 
-
-SELECT val
-FROM visu_date_input,  ST_IsValid(geom) as val
-WHERE val IS false
+*/
+ /*
 
 	DROP TABLE IF EXISTS source_time_histogram ; 
 	CREATE TABLE source_time_histogram AS
@@ -117,15 +112,4 @@ WHERE val IS false
 	CREATE TABLE time_reference AS 
 	SELECT s, ST_MakePoint(s,-2) AS geom
 	FROM generate_series(1800,2000,25) as  s ; 
-
-
-	SELECT *
-	FROM bottin_cleaned
-		LEFT OUTER JOIN bottin_geocoded USING (gid)
-	WHERE confidence_in_result IS NULL
-	LIMIT 100 ; 
-
-
-	
-
-	
+*/
