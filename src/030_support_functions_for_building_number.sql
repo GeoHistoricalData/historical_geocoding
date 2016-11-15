@@ -1,14 +1,14 @@
-﻿--------------------------------
--- Rémi Cura, 2016
+--------------------------------
+-- Rmi Cura, 2016
 -- projet geohistorical data
 -- 
 --------------------------------
--- fonction reconnaissant et exploitant la numérotation de rue francaise
--- pour deux numéros donnés 48 bis, 48-A, 48A etc
+-- fonction reconnaissant et exploitant la numrotation de rue francaise
+-- pour deux numros donns 48 bis, 48-A, 48A etc
 -- on veut pouvoir les ordonner
 -- on passe par une etape de parsing, puis des regles d'ordonnancement
 --
--- note : fonctions testées avec succès sur les données open street map ile de france
+-- note : fonctions testes avec succs sur les donnes open street map ile de france
 -- cas d'echec : normalisation : aucun
 -- cas d'echec : numerotation2float : robuste aux erreur d'orth, sauf "66is" -> "66I"->"66.09"
 --------------------------------
@@ -19,13 +19,13 @@
 	DROP FUNCTION IF EXISTS historical_geocoding.normaliser_numerotation(numerotation text) ;
 	CREATE OR REPLACE FUNCTION historical_geocoding.normaliser_numerotation(numerotation text, OUT numero int, OUT suffixe text)   AS 
 	$$
-		-- le format accepté en entré est D*%*W*, avec D des chiffres, % des characteres de separation non chiffre non lettre, et W des lettres
+		-- le format accept en entr est D*%*W*, avec D des chiffres, % des characteres de separation non chiffre non lettre, et W des lettres
 	DECLARE
 		_r record; 
 		_numero text;
 		_suffixe text; 
 		
-	-- on essaye de séparer le numéro du reste
+	-- on essaye de sparer le numro du reste
 	BEGIN 
 		SELECT NULL, NULL INTO numero, suffixe ; 
 		SELECT ar[1] AS numero, ar[2] as suffixe INTO _numero,_suffixe FROM  regexp_matches(trim( both ' ' from numerotation), '([\-]{0,1}[0-9]*).*?([a-zA-Z]*)') AS ar ; 
@@ -58,7 +58,7 @@
 
 
 	
-	-- creation d'une table de suffixe autorisé et de leur poid relatif, pour l'ordonnancement 
+	-- creation d'une table de suffixe autoris et de leur poid relatif, pour l'ordonnancement 
 	DROP TABLE IF EXISTS historical_geocoding.ordonnancement_suffixe ; 
 	CREATE TABLE IF NOT EXISTS historical_geocoding.ordonnancement_suffixe(
 	gid serial  PRIMARY KEY,
@@ -82,9 +82,9 @@
 	CREATE OR REPLACE FUNCTION historical_geocoding.numerotation2float(numerotation text) 
 	RETURNS float AS 
 	$$
-		-- le format accepté en entré est D*%*W*, avec D des chiffres, % des characteres de separation non chiffre non lettre, et W des lettres
+		-- le format accept en entr est D*%*W*, avec D des chiffres, % des characteres de separation non chiffre non lettre, et W des lettres
 	DECLARE
-	-- on separe numéro et suffixe,. Pour chaque siffixe, on regarde quel modulateur correspond dans la liste des suffixe, puis on retourne le numéro modifié
+	-- on separe numro et suffixe,. Pour chaque siffixe, on regarde quel modulateur correspond dans la liste des suffixe, puis on retourne le numro modifi
 		_num int  ; 
 		_suff text := NULL;
 		_ord float ; 
@@ -94,7 +94,7 @@
 		LIMIT 1 ;
 
 		IF _suff IS NULL AND _num IS NULL OR _num IS NULL THEN 
-			RAISE NOTICE  'la numerotation "%" n a pas pu être décomposée en une paire numér+suffixe',numerotation ; 
+			RAISE NOTICE  'la numerotation "%" n a pas pu tre dcompose en une paire numr+suffixe',numerotation ; 
 			RETURN NULL ; 
 		END IF;
 
@@ -102,7 +102,7 @@
 		return _num ; 
 		END IF;
  
-		--on cherche le suffixe le plus approprié
+		--on cherche le suffixe le plus appropri
 		SELECT ordonnancement INTO _ord
 		FROM  historical_geocoding.ordonnancement_suffixe as suf
 		ORDER BY similarity(_suff,suf.suffixe) DESC
@@ -126,7 +126,7 @@
 	DROP FUNCTION IF EXISTS historical_geocoding.float2numerotation(inumf float, OUT numerotation text) ;
 	CREATE OR REPLACE FUNCTION historical_geocoding.float2numerotation(inumf float, OUT numerotation text)  AS 
 	$$
-		-- le format en entré est un float, la sortie du texte par exe : 12.02 -> 12Bis
+		-- le format en entr est un float, la sortie du texte par exe : 12.02 -> 12Bis
 	DECLARE 
 	BEGIN   
 		BEGIN

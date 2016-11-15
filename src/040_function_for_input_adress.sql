@@ -1,4 +1,4 @@
-﻿------------------------
+------------------------
 -- Remi Cura, 2016 , Projet Belle Epoque
 ------------------------
 		--using libpostal 
@@ -360,7 +360,7 @@ WHERE source = 'ras';
 
 	INSERT INTO example_adress_query (adress_query,date_query) VALUES
 		('10b r. Chauchat, Paris', 'entre 1820 et 1828')
-		, ('10b r. Chauchat, Paris', '1820 à 1828')
+		, ('10b r. Chauchat, Paris', '1820  1828')
 		, ('10b r. Chauchat, Paris', '1820-1828')
 		, ('10b r. Chauchat, Paris', '01/02/1820-03/04/1828')
 		, ('10b r. Chauchat, Paris', NULL);
