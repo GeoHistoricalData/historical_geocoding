@@ -27,6 +27,7 @@
 
      -- /usr/lib/postgresql/9.5/bin/shp2pgsql -d -I /media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/poubelle_TEMPORAIRE.shp poubelle_paris.poubelle_src_2 | psql -d test_geocodage;
 
+
 	ALTER TABLE poubelle_paris.poubelle_src ALTER COLUMN geom TYPE geometry(multilinestring,2154) USING ST_SetSRID(geom,2154)  ;
 	ALTER TABLE poubelle_paris.poubelle_src_2 ALTER COLUMN geom TYPE geometry(multilinestring,2154) USING ST_SetSRID(geom,2154)  ;
 
@@ -596,3 +597,55 @@ FROM geohistorical_object.historical_source ;
 	-- for how much road can we predict the direction of numbering
 	-- for how much road can we interpolate 
 */
+
+-- importing new version of numbers : 
+-- shp2pgsql -c -W "LATIN1" -I ./poubelle_numbers.shp  poubelle_paris.poubelle_numbers_import | psql -d test -p 5433
+	
+	ALTER TABLE poubelle_paris.poubelle_numbers_import ALTER COLUMN geom TYPE geometry(point,2154) USING ST_SetSRID(geom,2154)  ;
+
+	
+SELECT * 
+FROM poubelle_numbers_import
+LIMIT 100 ; 
+
+	DROP TABLE IF EXISTS poubelle_number_updated ; 
+	CREATE TABLE poubelle_number_updated(
+		gid serial primary key REFERENCES poubelle_numbers_import(gid)
+		, quartier text
+		, approx_road_width float
+		, is_left_side boolean 
+	) INHERITS (precise_localisation) ; 
+	TRUNCATE poubelle_number_updated CASCADE ; 
+
+	
+INSERT INTO poubelle_number_updated (historical_name, normalised_name, geom, specific_fuzzy_date, specific_spatial_precision, historical_source, numerical_origin_process
+		, associated_normalised_rough_name
+		,gid
+		,quartier
+		, approx_road_width
+		 ,  is_left_side )
+		SELECT numbers_va::int || ' '|| normalised AS historical_name
+			,   numbers_va::int || ' '|| normalised || ' ' ||  ', Paris'  AS normalised_name
+			,geom AS geom
+			,NULL AS specific_fuzzy_date
+			,NULL AS specific_spatial_precision 
+			, 'poubelle_municipal_paris' AS historical_source
+			, 'poubelle_paris_number' AS numerical_origin_process
+			, normalised || ' ' ||  ', Paris' 
+			,   gid
+			, quartier
+			, approx_roa
+			, is_left_si::boolean
+		FROM  
+			poubelle_numbers_import
+			WHERE numbers_va is not null ;
+
+	 CREATE INDEX ON poubelle_number_updated USING GIN (associated_normalised_rough_name gin_trgm_ops) ; 
+	 CREATE INDEX ON poubelle_number_updated (quartier)  ; 
+	 SELECT geohistorical_object.register_geohistorical_object_table('poubelle_paris','poubelle_number_updated') ;
+
+	SELECT *
+	FROM poubelle_number_updated
+	LIMIT 10 ; 
+
+	--TRUNCATE poubelle_paris.poubelle_number

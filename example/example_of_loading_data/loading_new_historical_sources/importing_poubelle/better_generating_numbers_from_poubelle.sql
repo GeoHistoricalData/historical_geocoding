@@ -316,13 +316,17 @@ WHERE abs(sn -en ) >=2 ;
 
 DROP TABLE IF EXISTS poubelle_number_for_export  ;
 CREATE TABLE IF NOT EXISTS poubelle_number_for_export AS  
- SELECT DISTINCT ON (tid2) row_number() over() AS gid, gn.normalised_name, gn.numbers_value, gn.is_left_side, round(gn.approx_road_width::numeric,2)
+ SELECT DISTINCT ON (tid2) row_number() over() AS gid, gn.normalised_name, gn.numbers_value, gn.is_left_side
+	, round(gn.approx_road_width::numeric,2) AS approx_road_width
 	, ST_SNapToGrid(gn.number_geom,0.1)::geometry(point,2154) AS number_geom
 	,NULL::text AS quartier -- quar.normalised_name AS quartier
  FROM generating_number AS gn ; 
 	-- , jacoubet_paris.jacoubet_quartier AS quar
 	-- WHERE ST_Intersects(gn.number_geom, quar.geom)
 	--ORDER BY tid2, ST_Distance(gn.number_geom, quar.geom), ST_Area(quar.geom) DESC
+
+	ALTER TABLE poubelle_number_for_export ADD PRIMARY KEY (gid) ; 
+	CREATE INDEX ON poubelle_number_for_export USING GIST(number_geom) ; 
  
 WITH to_be_updated as (
 	SELECT DISTINCT ON (gid ) gid, quar.normalised_name AS quartier
@@ -334,6 +338,10 @@ WITH to_be_updated as (
 UPDATE poubelle_number_for_export AS pn SET quartier = tbu.quartier
 FROM to_be_updated AS tbu 
 WHERE tbu.gid  = pn.gid ; 
+
+SELECT *
+FROM poubelle_number_for_export
+WHERE numbers_value IS NULL ; 
 					
    
 	CREATE OR REPLACE FUNCTION rc_LineSubstring(geom geometry, abs1 float, abs2 float) RETURNS geometry
