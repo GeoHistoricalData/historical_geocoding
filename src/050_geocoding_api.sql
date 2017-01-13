@@ -1,13 +1,45 @@
-------------------------
+﻿------------------------
 -- Remi Cura, 2016 , Projet Belle Epoque
 ------------------------
 
 
 -- geocoding api
 
-
-			
-
+--utilitary function to sanitize API text input : remove all kind of commentary
+ 
+DROP FUNCTION IF EXISTS historical_geocoding.sanitize_input( itext text) ; 
+CREATE OR REPLACE FUNCTION historical_geocoding.sanitize_input( itext text) RETURNS TEXT AS $BODY$
+		--@brief : this function takes an input text and remove everything looking like a comment, or 'SELECT ', 'UPDATE', ALTER, DROP INSERT  
+		DECLARE   
+			_cleaned text ; 
+			_tc text ; 
+		BEGIN 
+			_cleaned := replace(replace(replace(replace(itext, '$', ''),'-',''),'/*',''),'*/','');
+ 
+		--loop : if we find a chr or /*, remove it, loop
+		 
+		LOOP
+			_tc := _cleaned ;
+		    _cleaned := regexp_replace(_cleaned, '/*', '','ig') ;  --remove all nested /*  candidates 
+		    _cleaned := regexp_replace(_cleaned, 'chr\(', '','ig') ; -- rmeove all chr(
+		    _cleaned := regexp_replace(_cleaned, 'SELECT', '','ig') ; -- rmeove all dangerous SQL command
+		    _cleaned := regexp_replace(_cleaned, 'UPDATE', '','ig') ;  
+		    _cleaned := regexp_replace(_cleaned, 'ALTER', '','ig') ;  
+		    _cleaned := regexp_replace(_cleaned, 'DROP', '','ig') ;  
+		    _cleaned := regexp_replace(_cleaned, 'DELETE', '','ig') ; 
+		    _cleaned := regexp_replace(_cleaned, 'INSERT', '','ig') ;  
+		    _cleaned := regexp_replace(_cleaned, 'COPY', '','ig') ;  
+		    
+		    IF _tc = _cleaned THEN EXIT; END IF;
+		END LOOP  ; 
+		RETURN  _cleaned ; 
+		END ; 
+	$BODY$
+LANGUAGE plpgsql  strict;  
+SELECT historical_geocoding.sanitize_input(' 1=1 ;--
+SELECT DROP table
+/*trying to hack database -- -- - ----- /**///****// $$ $$ $$$$ chr(12) CHR(12) Chr(12) CHR/**/(12 */'); 
+			 
 DROP FUNCTION IF EXISTS historical_geocoding.geocode_name_base( 
 	query_adress text, query_date sfti, use_precise_localisation boolean
 	, ordering_priority_function text  
@@ -23,7 +55,7 @@ CREATE OR REPLACE FUNCTION historical_geocoding.geocode_name_base(
 	, ordering_priority_function text DEFAULT ' 100*(semantic_distance) + 0.1 * temporal_distance + 10* number_distance + 0.1 *spatial_precision + 0.01 * scale_distance +  0.001 * spatial_distance '
 	, max_number_of_candidates int DEFAULT 10 
 	, max_semantic_distance float DEFAULT 0.45
-	, temporal_distance_range sfti DEFAULT sfti_makesfti(1820,1820,2000,2000) 
+	, temporal_distance_range sfti DEFAULT sfti_makesfti(1800,1800,2100,2100) 
 	, optional_scale_range numrange DEFAULT numrange(0,10000)
 	, optional_reference_geometry geometry(multipolygon,2154) DEFAULT NULL
 	, optional_max_spatial_distance float DEFAULT NULL)
@@ -51,6 +83,7 @@ RETURNS table(rank int,
 			_sql text := NULL ; 
 			_precise_or_rough_name text  := 'precise';
 		BEGIN  
+			
 			-- the minimal allowed semantic distance is used in indexing, as such it is quite essential
 			EXECUTE format('SELECT set_limit(1-%s) ;',max_semantic_distance) ; 
 			IF use_precise_localisation IS FALSE THEN 
@@ -58,9 +91,7 @@ RETURNS table(rank int,
 			END IF ; 
 
 			--basic sanitizing of user input for ordering function
-			ordering_priority_function := replace(ordering_priority_function,'--',' ') ; 
-			ordering_priority_function := replace(ordering_priority_function,'/*',' ') ; 
-			ordering_priority_function := replace(ordering_priority_function,'$$',' ') ;  
+			ordering_priority_function := historical_geocoding.sanitize_input(ordering_priority_function) ;  
 			
 
 			
@@ -146,7 +177,7 @@ CREATE OR REPLACE FUNCTION historical_geocoding.geocode_name_optimised_inter(
 	, ordering_priority_function text DEFAULT ' 100*(semantic_distance) + 0.1 * temporal_distance + 0.1 *spatial_precision + 0.01 * scale_distance +  0.001 * spatial_distance '
 	, max_number_of_candidates int DEFAULT 10 
 	, max_semantic_distance float DEFAULT 0.45
-	, temporal_distance_range sfti DEFAULT sfti_makesfti(1820,1820,2000,2000) 
+	, temporal_distance_range sfti DEFAULT sfti_makesfti(1800,1800,2100,2100) 
 	, optional_scale_range numrange DEFAULT numrange(0,10000)
 	, optional_reference_geometry geometry(multipolygon,2154) DEFAULT NULL
 	, optional_max_spatial_distance float DEFAULT NULL)
@@ -172,6 +203,7 @@ RETURNS table(rank int,
 		DECLARE  
 			_returned_count int := 0 ; 
 		BEGIN   
+			ordering_priority_function := historical_geocoding.sanitize_input(ordering_priority_function) ;  
 			FOR _i in 0..10
 			LOOP 
 				RETURN QUERY 
@@ -215,7 +247,7 @@ CREATE OR REPLACE FUNCTION historical_geocoding.geocode_name_optimised(
 	, ordering_priority_function text DEFAULT ' 100*(semantic_distance) + 0.1 * temporal_distance + 0.1 *spatial_precision + 0.01 * scale_distance +  0.001 * spatial_distance '
 	, max_number_of_candidates int DEFAULT 10 
 	, max_semantic_distance float DEFAULT 0.45
-	, temporal_distance_range sfti DEFAULT sfti_makesfti(1820,1820,2000,2000) 
+	, temporal_distance_range sfti DEFAULT sfti_makesfti(1800,1800,2100,2100) 
 	, optional_scale_range numrange DEFAULT numrange(0,10000)
 	, optional_reference_geometry geometry(multipolygon,2154) DEFAULT NULL
 	, optional_max_spatial_distance float DEFAULT NULL)
@@ -240,6 +272,7 @@ RETURNS table(rank int,
 		DECLARE  
 			_returned_count int := 0  ; 
 		BEGIN  
+			ordering_priority_function := historical_geocoding.sanitize_input(ordering_priority_function) ;  
 			 RETURN QUERY
 				SELECT * 
 				FROM (
@@ -297,7 +330,7 @@ CREATE OR REPLACE FUNCTION historical_geocoding.geocode_name_foolproof(
 	, ordering_priority_function text DEFAULT ' 100*(semantic_distance) + 0.1 * temporal_distance + 0.1 *spatial_precision + 0.01 * scale_distance +  0.001 * spatial_distance '
 	, max_number_of_candidates int DEFAULT 10 
 	, max_semantic_distance float DEFAULT 0.45
-	, temporal_distance_range sfti DEFAULT sfti_makesfti(1820,1820,2000,2000) 
+	, temporal_distance_range sfti DEFAULT sfti_makesfti(1800,1800,2100,2100) 
 	, optional_scale_range numrange DEFAULT numrange(0,10000)
 	, optional_reference_geometry geometry(multipolygon,2154) DEFAULT NULL
 	, optional_max_spatial_distance float DEFAULT NULL)
@@ -311,6 +344,7 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 		DECLARE 
 			_returned_count int := 0 ; 
 		BEGIN  
+			ordering_priority_function := historical_geocoding.sanitize_input(ordering_priority_function) ;  
 			 RETURN QUERY
 				SELECT DISTINCT ON ( historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process) *
 				FROM historical_geocoding.geocode_name_optimised_inter(
@@ -330,6 +364,7 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 			GET DIAGNOSTICS _returned_count = ROW_COUNT;
 
 			IF (_returned_count = 0 ) AND use_precise_localisation IS TRUE THEN -- didn't found anything, looking for rough localisation
+			RETURN QUERY 
 				SELECT DISTINCT ON ( historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process) *
 				FROM historical_geocoding.geocode_name_optimised_inter(
 					query_adress  , query_date  , false  
@@ -345,7 +380,21 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 	$BODY$
 LANGUAGE plpgsql  VOLATILE CALLED ON NULL INPUT; 
 
-
+/*
+SELECT f.*
+FROM historical_geocoding.geocode_name_foolproof(
+	query_adress:='14 rue toto'
+	, query_date:= sfti_makesfti('1872-11-15'::date) -- sfti_makesftix(1872,1873,1880,1881)  -- sfti_makesfti('1972-11-15');
+	, use_precise_localisation := true 
+	, ordering_priority_function := '100*(semantic_distance) + 0.1 * temporal_distance + 1* number_distance + 0.1 *spatial_precision + 0.001 * scale_distance +  0.0001 * spatial_distance'
+	, max_number_of_candidates := 100
+	, max_semantic_distance := 0.3
+		, temporal_distance_range := sfti_makesfti(1820,1820,2000,2000) 
+		, optional_scale_range := numrange(0,100)
+		, optional_reference_geometry := NULL -- ST_Buffer(ST_GeomFromText('POINT(652208.7 6861682.4)',2154),5)
+		, optional_max_spatial_distance := 10000
+) AS  f  ;
+*/
 /*
 DROP TABLE IF EXISTS ehess_data.censitaire_lieu_contrib_geocoded ; 
 CREATE TABLE IF NOT EXISTS ehess_data.censitaire_lieu_contrib_geocoded  AS
