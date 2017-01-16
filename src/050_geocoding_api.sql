@@ -327,7 +327,7 @@ DROP FUNCTION IF EXISTS historical_geocoding.geocode_name_foolproof(
 	); 
 CREATE OR REPLACE FUNCTION historical_geocoding.geocode_name_foolproof(
 	query_adress text, query_date sfti,  use_precise_localisation boolean DEFAULT TRUE
-	, ordering_priority_function text DEFAULT ' 100*(semantic_distance) + 0.1 * temporal_distance + 0.1 *spatial_precision + 0.01 * scale_distance +  0.001 * spatial_distance '
+	, ordering_priority_function text DEFAULT '100*(semantic_distance) + 0.1 * temporal_distance + 1* number_distance + 0.1 *spatial_precision + 0.001 * scale_distance +  0.0001 * spatial_distance'
 	, max_number_of_candidates int DEFAULT 10 
 	, max_semantic_distance float DEFAULT 0.45
 	, temporal_distance_range sfti DEFAULT sfti_makesfti(1800,1800,2100,2100) 
@@ -346,6 +346,8 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 		BEGIN  
 			ordering_priority_function := historical_geocoding.sanitize_input(ordering_priority_function) ;  
 			 RETURN QUERY
+			 SELECT *
+			 FROM (
 				SELECT DISTINCT ON ( historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process) *
 				FROM historical_geocoding.geocode_name_optimised_inter(
 					query_adress 
@@ -359,20 +361,24 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 						, optional_reference_geometry  
 						, optional_max_spatial_distance 
 					) AS  f  
-				ORDER BY historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process, aggregated_distance; 
-
+				ORDER BY historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process, aggregated_distance
+				) AS sub
+				ORDER BY rank ASC, aggregated_distance ; 
 			GET DIAGNOSTICS _returned_count = ROW_COUNT;
 
 			IF (_returned_count = 0 ) AND use_precise_localisation IS TRUE THEN -- didn't found anything, looking for rough localisation
 			RETURN QUERY 
+				SELECT * 
+				FROM (
 				SELECT DISTINCT ON ( historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process) *
 				FROM historical_geocoding.geocode_name_optimised_inter(
 					query_adress  , query_date  , false  
 					, ordering_priority_function   , max_number_of_candidates  ,  max_semantic_distance
 						, temporal_distance_range   , optional_scale_range  , optional_reference_geometry   , optional_max_spatial_distance 
 					) AS  f  
-				ORDER BY historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process, aggregated_distance;   
-
+				ORDER BY historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process, aggregated_distance
+				) AS sub
+				ORDER BY rank ASC, aggregated_distance ; 
 			END IF ;  
 			
 		RETURN ;
