@@ -214,9 +214,10 @@ FROM geohistorical_object.historical_source ;
 		-- precising temporal precision using the precise estimated time planche by planche by Bertrand. 
 
 		WITH to_be_updated AS (
-			SELECT DISTINCT ON (ja.gid)  ja.*, sfti_makesfti((min_date-1)::int, (min_date)::int, (max_date)::int, (max_date+1)::int) as new_sfti
+			SELECT DISTINCT ON (ja.gid)  ja.*, sfti_makesfti((min_date-1)::int, (min_date)::int, (smax_date)::int, (smax_date+1)::int) as new_sfti
 			FROM jacoubet_axis AS ja, ST_Buffer(ja.geom,5) AS ng, jacoubet_src_planche_l93 AS jp
-			WHERE ST_Intersects(ja.geom, jp.geom) = TRUE
+				, CAST(CASE WHEN COALESCE(max_date,0)<min_date THEN coalesce(min_date,0) +20 ELSE max_date END AS int)  AS smax_date
+			WHERE ST_Intersects(ja.geom, jp.geom) = TRUE 
 				ORDER BY ja.gid, ST_area(ST_Intersection( ng, jp.geom))/ ST_Area(ST_Union( ng, jp.geom)) DESC
 			)
 			UPDATE jacoubet_axis AS ja 
