@@ -96,10 +96,13 @@ RETURNS table(rank int,
 
 			
 			_sql := format('SELECT (row_number() over(order by aggregated_score ASC))::int as rank,
-					 rl.historical_name , rl.normalised_name  ,  rl.geom  ,   rl.specific_fuzzy_date ,
-					  rl.specific_spatial_precision ,   rl.historical_source ,   rl.numerical_origin_process 
-					 
-				, semantic_distance::float, temporal_distance::float,number_distance::float,  scale_distance::float, spatial_distance::float
+					 historical_geocoding.first(rl.historical_name) historical_name , historical_geocoding.first(rl.normalised_name ) normalised_name,  ST_Collect(rl.geom ) AS geom ,   historical_geocoding.first(rl.specific_fuzzy_date) AS specific_fuzzy_date  ,
+					  rl.specific_spatial_precision ,   rl.historical_source ,   rl.numerical_origin_process  
+				,historical_geocoding.first(semantic_distance) AS semantic_distance
+				,historical_geocoding.first(temporal_distance)  AS temporal_distance
+				,historical_geocoding.first(number_distance)  AS number_distance
+				,historical_geocoding.first(scale_distance)  AS scale_distance
+				,historical_geocoding.first(spatial_distance)  AS spatial_distance
 				, aggregated_score::float
 				, spatial_precision::float
 				, 1::float AS confidence_in_result -- TODO : fix this confidence to mean something
@@ -123,7 +126,8 @@ RETURNS table(rank int,
 				AND ST_Intersects(COALESCE(rl.specific_fuzzy_date,hs.default_fuzzy_date)::geometry , $6::geometry ) = TRUE -- time should be compativble with input max time range
 				--AND sqrt(st_Area(geom))::numeric <@ $3 -- scale distance 
 				AND ($4 IS NULL OR ST_DWithin($4::geometry ,rl.geom, $5)) -- the result should be within the allowed distance range to reference geometry
-				
+			GROUP BY upper(historical_name), upper(normalised_name),  historical_source ,numerical_origin_process,sfti2record(rl.specific_fuzzy_date) ,
+					  rl.specific_spatial_precision, aggregated_score,spatial_precision
 			ORDER BY aggregated_score ASC
 				
 			LIMIT %2$s ;',_precise_or_rough_name, max_number_of_candidates , ordering_priority_function);
@@ -141,13 +145,13 @@ LANGUAGE plpgsql  VOLATILE CALLED ON NULL INPUT;
 /*
 SELECT f.*
 FROM historical_geocoding.geocode_name_base(
-	query_adress:='11 rue de la paix'
+	query_adress:='10 rue du temple, Paris'
 	, query_date:= sfti_makesfti('1872-11-15'::date) -- sfti_makesftix(1872,1873,1880,1881)  -- sfti_makesfti('1972-11-15');
 	, use_precise_localisation := true 
 	, ordering_priority_function := '100*(semantic_distance) + 0.1 * temporal_distance + 10*number_distance +  0.1 *spatial_precision + 0.001 * scale_distance +  0.0001 * spatial_distance '
-	, max_number_of_candidates := 100
+	, max_number_of_candidates := 10
 	, max_semantic_distance := 0.3
-		, temporal_distance_range := sfti_makesfti(1820,1820,2000,2000) 
+		, temporal_distance_range := sfti_makesfti(1820,1820,2100,2100) 
 		, optional_scale_range := numrange(0,100)
 		, optional_reference_geometry := NULL -- ST_Buffer(ST_GeomFromText('POINT(652208.7 6861682.4)',2154),5)
 		, optional_max_spatial_distance := 10000
@@ -429,3 +433,32 @@ FROM distinct_lieu_contrib AS dlc
 			, optional_max_spatial_distance := 10000
 		) AS  f  ;
 */
+
+
+
+-- helper function 
+CREATE OR REPLACE FUNCTION historical_geocoding.round(float,int) RETURNS float AS $$
+    SELECT ROUND($1::numeric,$2)::float;
+ $$ language SQL IMMUTABLE;
+
+ SELECT historical_geocoding.round(12.123456789::float,2) ;
+
+
+ DROP FUNCTION IF EXISTS historical_geocoding.first_agg ( anyelement, anyelement ) ;
+CREATE OR REPLACE FUNCTION historical_geocoding.first_agg ( anyelement, anyelement )
+RETURNS anyelement LANGUAGE sql IMMUTABLE STRICT AS $$
+        SELECT $1;
+$$;
+ 
+-- And then wrap an aggregate around it
+DROP AGGREGATE IF EXISTS historical_geocoding.first(anyelement) ;
+CREATE  AGGREGATE historical_geocoding.first (
+        sfunc    = historical_geocoding.first_agg,
+        basetype = anyelement,
+        stype    = anyelement
+);
+
+
+SELECT historical_geocoding.first(s)
+FROM generate_series(1,10) As s
+GROUP BY true; 
