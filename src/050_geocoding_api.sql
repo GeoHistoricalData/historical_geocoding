@@ -378,6 +378,7 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 					) AS  f  
 				ORDER BY historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process, aggregated_distance
 				) AS sub
+				GROUP BY historical_name, normalised_name,  historical_source ,numerical_origin_process
 				ORDER BY rank ASC, aggregated_distance ; 
 			END IF ;  
 			
