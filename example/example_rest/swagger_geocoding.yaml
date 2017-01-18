@@ -1,0 +1,116 @@
+# Example YAML to get you started quickly.
+# Be aware that YAML has indentation based scoping.
+# Code completion support is available so start typing for available options.
+swagger: '2.0'
+
+# This is your document metadata
+info:
+  version: "0.1.0"
+  title: Historical geocoding
+host: geohistoricaldata.org
+basePath: /geocoding/geocoding.php
+schemes:
+  - http
+produces:
+  - application/json
+paths:
+  /:
+    get:
+      description: Gets geocoded adresse candidates
+      operationId: geocodeAdresse
+      produces:
+        - application/json
+        - text/html
+      parameters:
+        - name: adresse
+          in: query
+          description: Adresse to be geocoded, including city. EX `14 rue du temple, Paris`.
+          required: true
+          type: string
+        - name: date
+          in: query
+          description: The date of the adresse, it should be between 1800 and 2100
+          required: true
+          type: integer
+          format: int32
+        - name: number_of_results
+          in: query
+          description: The geocoder will provide at most this number of geocoded adresses
+          required: true
+          type: integer
+          format: int32
+        - name: use_precise_localisation
+          in: query
+          description: show building number, else, street, neighbourhood or even city
+          required: true
+          type: boolean
+          format: boolean
+      responses:
+        '200':
+          description: Adresse candidates found
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/adresse_result'
+definitions:
+  adresse_result:
+    type: object
+    required:
+      - rank
+      - historical_name
+      - normalised_name
+      - geom
+      - historical_source
+      - numerical_origin_process
+      - semantic_distance
+      - temporal_distance
+      - number_distance
+      - scale_distance
+      - spatial_distance
+      - aggregated_distance
+      - spatial_precision
+      - confidence_in_result
+    properties:
+      rank:
+        type: integer
+        format: int64
+      historical_name:
+        type: string
+      normalised_name:
+        type: string
+      geom:
+        type: string
+      historical_source:
+        type: string
+      numerical_origin_process:
+        type: string
+      semantic_distance:
+        type: number
+        format: float
+      temporal_distance:
+        type: number
+        format: float
+      number_distance:
+        type: number
+        format: float
+      scale_distance:
+        type: number
+        format: float
+      spatial_distance:
+        type: number
+        format: float
+      aggregated_distance:
+        type: number
+        format: float
+      spatial_precision:
+        type: number
+        format: float
+      confidence_in_result:
+        type: number
+        format: float
+      
+                  #{"rank":"1","historical_name":"12 rue du temple","normalised_name":"12 rue du temple , Paris","geom":"POINT(652544.1 6862204.4)","historical_source":"poubelle_municipal_paris","numerical_origin_process":"poubelle_paris_number","semantic_distance":"0","temporal_distance":"13","number_distance":"0","scale_distance":"0","spatial_distance":"0","aggregated_distance":"1.64999","spatial_precision":"3.5","confidence_in_result":"1"
+                  
+                  
+                  
+                  
