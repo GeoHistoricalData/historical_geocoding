@@ -147,7 +147,7 @@ SELECT f.*
 FROM historical_geocoding.geocode_name_base(
 	query_adress:='10 rue du temple, Paris'
 	, query_date:= sfti_makesfti('1872-11-15'::date) -- sfti_makesftix(1872,1873,1880,1881)  -- sfti_makesfti('1972-11-15');
-	, use_precise_localisation := true 
+	, use_precise_localisation := false 
 	, ordering_priority_function := '100*(semantic_distance) + 0.1 * temporal_distance + 10*number_distance +  0.1 *spatial_precision + 0.001 * scale_distance +  0.0001 * spatial_distance '
 	, max_number_of_candidates := 10
 	, max_semantic_distance := 0.3
@@ -350,7 +350,11 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 		BEGIN  
 			ordering_priority_function := historical_geocoding.sanitize_input(ordering_priority_function) ;  
 			 RETURN QUERY
-			 SELECT *
+			 SELECT (row_number() over(order by s.aggregated_distance, s.rank))::int AS rank ,  s.historical_name , s.normalised_name ,   s.geom ,   s.specific_fuzzy_date 
+				,   s.specific_spatial_precision , s.historical_source ,  s.numerical_origin_process 
+				, s.semantic_distance , s.temporal_distance , s.number_distance 
+				, s.scale_distance , s.spatial_distance , s.aggregated_distance , s.spatial_precision 
+				, s.confidence_in_result 
 			 FROM (
 				SELECT DISTINCT ON ( historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process) *
 				FROM historical_geocoding.geocode_name_optimised_inter(
@@ -366,13 +370,17 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 						, optional_max_spatial_distance 
 					) AS  f  
 				ORDER BY historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process, aggregated_distance
-				) AS sub
+				) AS s
 				ORDER BY rank ASC, aggregated_distance ; 
 			GET DIAGNOSTICS _returned_count = ROW_COUNT;
 
 			IF (_returned_count = 0 ) AND use_precise_localisation IS TRUE THEN -- didn't found anything, looking for rough localisation
 			RETURN QUERY 
-				SELECT * 
+				SELECT (row_number() over(order by s.aggregated_distance, s.rank))::int AS rank ,  s.historical_name , s.normalised_name ,   s.geom ,   s.specific_fuzzy_date 
+					,   s.specific_spatial_precision , s.historical_source ,  s.numerical_origin_process 
+					, s.semantic_distance , s.temporal_distance , s.number_distance 
+					, s.scale_distance , s.spatial_distance , s.aggregated_distance , s.spatial_precision 
+					, s.confidence_in_result  
 				FROM (
 				SELECT DISTINCT ON ( historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process) *
 				FROM historical_geocoding.geocode_name_optimised_inter(
@@ -381,9 +389,8 @@ RETURNS table(rank int,  historical_name text, normalised_name text,   geom geom
 						, temporal_distance_range   , optional_scale_range  , optional_reference_geometry   , optional_max_spatial_distance 
 					) AS  f  
 				ORDER BY historical_name, normalised_name,  geom,  historical_source ,numerical_origin_process, aggregated_distance
-				) AS sub
-				GROUP BY historical_name, normalised_name,  historical_source ,numerical_origin_process
-				ORDER BY rank ASC, aggregated_distance ; 
+				) AS s 
+				ORDER BY s.rank ASC, s.aggregated_distance ; 
 			END IF ;  
 			
 		RETURN ;
@@ -394,13 +401,13 @@ LANGUAGE plpgsql  VOLATILE CALLED ON NULL INPUT;
 /*
 SELECT f.*
 FROM historical_geocoding.geocode_name_foolproof(
-	query_adress:='14 rue toto'
+	query_adress:='14 rue temple, paris'
 	, query_date:= sfti_makesfti('1872-11-15'::date) -- sfti_makesftix(1872,1873,1880,1881)  -- sfti_makesfti('1972-11-15');
-	, use_precise_localisation := true 
+	, use_precise_localisation := false 
 	, ordering_priority_function := '100*(semantic_distance) + 0.1 * temporal_distance + 1* number_distance + 0.1 *spatial_precision + 0.001 * scale_distance +  0.0001 * spatial_distance'
 	, max_number_of_candidates := 100
 	, max_semantic_distance := 0.3
-		, temporal_distance_range := sfti_makesfti(1820,1820,2000,2000) 
+		, temporal_distance_range := sfti_makesfti(1820,1820,2100,2100) 
 		, optional_scale_range := numrange(0,100)
 		, optional_reference_geometry := NULL -- ST_Buffer(ST_GeomFromText('POINT(652208.7 6861682.4)',2154),5)
 		, optional_max_spatial_distance := 10000
