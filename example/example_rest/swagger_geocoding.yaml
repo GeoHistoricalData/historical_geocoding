@@ -5,8 +5,13 @@ swagger: '2.0'
 
 # This is your document metadata
 info:
+  description: An historical geocoding service provider for France. Given an adresse and a date, tryies to find the best localisation on the map based on available historical data. 
   version: "0.1.0"
   title: Historical geocoding
+  contact:
+    name: julien dot perret at gmail dot com
+  license:
+    name: BSD
 host: geohistoricaldata.org
 basePath: /geocoding/geocoding.php
 schemes:
@@ -16,7 +21,9 @@ produces:
 paths:
   /:
     get:
-      description: Gets geocoded adresse candidates
+      summary: Sending an adresse, date, and parameters, returns potential localisation candidates for this adresse
+      description: Given an adresse and a date, tryies to find the best localisation on the map based on available historical data. Use variable user defined ranking to provide the best results. Can provide precise localisation (house number), or rough localisation (street, neighbourhood, city). 
+        Proposed localisation are fully linked to historical source, and their spatial precision is evaluated
       operationId: geocodeAdresse
       produces:
         - application/json
@@ -24,27 +31,35 @@ paths:
       parameters:
         - name: adresse
           in: query
-          description: Adresse to be geocoded, including city. EX `14 rue du temple, Paris`.
+          description: Adresse to be geocoded, including city. Not case sensitive EX `14 rue du temple, Paris`.
           required: true
           type: string
+          default: "20 rue du temple, Paris"
         - name: date
           in: query
-          description: The date of the adresse, it should be between 1800 and 2100
-          required: true
+          description: The historical date of the adresse, it should be between `1800` and `2100`. The best historical source will be selected (partially) according to this date
+          required: false
           type: integer
           format: int32
+          default: 1870
+          minimum: 1800
+          maximum: 2100
         - name: number_of_results
           in: query
-          description: The geocoder will provide at most this number of geocoded adresses
-          required: true
+          description: The geocoder will provide at most this number of geocoded adresses, ranked from best to worst. Use `1` if you want only the best result. Default to `1`.
+          required: false
           type: integer
           format: int32
+          default: 1
+          minimum: 1
+          maximum: 300
         - name: use_precise_localisation
           in: query
-          description: show building number, else, street, neighbourhood or even city
+          description: If set to `true` (or `1`), the proposed results will be house number adresses (e.g. `12 rue du temple, Paris`). If set to `false` (or `0`), the proposed adresses may be street (e.g. `Rue du temple, Paris`), neighbourhood (e.g. `quartier du temple, Paris`), or even city (e.g. `commune de Temple les bains`).
           required: true
           type: boolean
           format: boolean
+          default: true 
       responses:
         '200':
           description: Adresse candidates found
@@ -52,6 +67,23 @@ paths:
             type: array
             items:
               $ref: '#/definitions/adresse_result'
+          examples:
+            'application/json' :
+              rank: 1
+              historical_name: "12, r. du temple"
+              normalised_name: "12 rue du temple, paris"
+              geom: "POINT(0,0)"
+              historical_source: "jacoubet_paris"
+              numerical_origin_process: "jacoubet_paris_number"
+              semantic_distance: 0.15
+              temporal_distance: 65
+              number_distance: 2
+              scale_distance: 0
+              spatial_distance: 0
+              aggregated_distance: 0.258
+              spatial_precision: 5
+              confidence_in_result: 1
+           
 definitions:
   adresse_result:
     type: object
@@ -72,45 +104,65 @@ definitions:
       - confidence_in_result
     properties:
       rank:
+        description: The best answers according to aggregated_distance are ranked first
         type: integer
         format: int64
+        minimum: 1
+        maximum: 300
       historical_name:
+        description: The found adress original name in the historical source. E.g. `12, R. du temple`
         type: string
       normalised_name:
+        description: The found adress normalised name according to current standard. E.g. `12 rue du temple, Paris`
         type: string
       geom:
+        description: geometry of the adress in WKT (Well Known Text). May be any geometry type (point, linestring, multi, geometry collection, etc.). E.g. `POINT(652697.7,6862479.6)`
         type: string
       historical_source:
+        description: the adresse comes from a historical source precisely referenced in the database. This is the short description of the source, but full details are available in the doc. E.g `jacoubet_paris`
         type: string
       numerical_origin_process:
+        description: the adresse comes from a historical source that has been digitized with a given process. This is the short description, but full details are available in the doc. E.g `jacoubet_paris_numbers`
         type: string
       semantic_distance:
+        description: how close semantically is the adresse to the adresse-query ? ( using trigram distance). Between `0` (totally similar e.g. `temple` and `TeMPLe`) and `1` (totally dissimilar). E.g. of real-life e.g. `rue des tanneurs` to `rue DES TANNERIES` is `0.296`
         type: number
         format: float
+        minimum: 0
+        maximum: 1
       temporal_distance:
+        description: how close temporally is the adresse to the adresse-query ? ( using fuzzy distance based on geometry of dates as trapezoids). E.g. `1870` is at a temporal distance of `30` from `1840`
         type: number
         format: float
+        minimum: 0
       number_distance:
+        description: distance between the adresse-querry house number and the found adresse house number, corrected for parity (`2` is closer to `4` than to `3`). Based on Paris current house number stats, the average distance between od and even number is `10` 
         type: number
         format: float
+        minimum: 0
       scale_distance:
+        description: user can define the scale of the expected adresse-result (e.g. `100`m). In this case, how far (eucl dist) is the adresse-query expected scale from the adresse-result scale.
         type: number
         format: float
+        minimum: 0
       spatial_distance:
+        description: user can define an expected spatial position for the results by inputing a geometry (e.g. `POINT(652697.7,6862479.6)`). How spatially far are the actual results from this expected spatial position. This is usefull if you expect the result to be near to a neighbourhood for instance.
         type: number
         format: float
+        minimum: 0
       aggregated_distance:
+        description: MAIN DISTANCE, aggregates all the distances following the user provided distance evaluation function. Smaller agregated_distance means the result is better. Here is an example of such distance function `'100*(semantic_distance) + 0.1 * temporal_distance + 10*number_distance + 0.001 * scale_distance +  0.0001 * spatial_distance'`. Note that a perfect result should be at `0` distance for a sucessful confidence evaluation
         type: number
         format: float
+        minimum: 0
       spatial_precision:
+        description: Each adresse-result is associated with a spatial precision estimated based on precision of historical source and precision of the digitization process. Expressed in meter. e.g. `13` meters. You can display the result dilated (buffer) by this amount if you want to visually express the uncertainity in localisation.
         type: number
         format: float
+        minimum: 0
       confidence_in_result:
+        description: between `0` (not confident at all) and `1` (fully confident) confidence in the proposed adresse. Confidence is based on a statistic clustering of results.
         type: number
-        format: float
-      
-                  #{"rank":"1","historical_name":"12 rue du temple","normalised_name":"12 rue du temple , Paris","geom":"POINT(652544.1 6862204.4)","historical_source":"poubelle_municipal_paris","numerical_origin_process":"poubelle_paris_number","semantic_distance":"0","temporal_distance":"13","number_distance":"0","scale_distance":"0","spatial_distance":"0","aggregated_distance":"1.64999","spatial_precision":"3.5","confidence_in_result":"1"
-                  
-                  
-                  
-                  
+        format: float 
+        minimum: 0
+        maximum: 1
