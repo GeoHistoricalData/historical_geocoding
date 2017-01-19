@@ -5,7 +5,7 @@ swagger: '2.0'
 
 # This is your document metadata
 info:
-  description: An historical geocoding service provider for France. Given an adresse and a date, tryies to find the best localisation on the map based on available historical data. 
+  description: An historical geocoding service provider for France [geocoding access](https://www.geohistoricaldata.org/geocoding/). Given an adresse and a date, tryies to find the best localisation on the map based on available historical data. 
   version: "0.1.0"
   title: Historical geocoding
   contact:

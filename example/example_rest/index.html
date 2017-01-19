@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Historical Geocoding for Paris:  API prototype</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script> 
+		<link rel="stylesheet" type="text/css" href="basic_style.css">
+    </head>
+    <p> 
+    Please look at <a href="./rest_api_doc.html">API documentation</a> for precise documentation on how to use geocoding with a programm
+    </p> 
+	<form id="formoid" action="formoid" method="post" >
+    <div>
+        <label for="Adresse">Adresse :</label> 
+		<textarea id="user_adresse" placeholder="ex : 12 rue du temple, Paris" name="user_adresse"> 12 rue du temple, Paris</textarea>
+    </div>
+    <div>
+        <label for="Date">Date :</label>
+        <input type="number" id="user_date" placeholder="ex : 1875" name="user_date" min="1800" max="2144" value="1860"/> 
+    </div> 
+	<div> 
+        <label for="Date">Maximum number of results :</label>
+        <input type="number" id="user_number_of_result" placeholder="ex : 4" name="user_number_of_result" min="1" max="300" value="1"/>
+    </div> 
+	<div> 
+        <label for="Date">Do you want precise (house number) or rough (street, neighboourhood, city) localisation</label>
+		<input type="hidden" value='0' name="user_use_precise_localisation"/>
+        <input type="checkbox" id="user_use_precise_localisation" name="user_use_precise_localisation" value="1" checked/> 
+    </div> 
+	 
+	<div class="button">
+        <button type="submit">Géocoder</button>
+    </div>
+	
+	
+</form>
+ 
+	
+<script type='text/javascript'> 
+    /* attach a submit handler to the form */
+    $("#formoid").submit(function(event) {
+
+      /* stop form from submitting normally */
+      event.preventDefault();
+
+      /* get the action attribute from the <form action=""> element */
+      var $form = $(this ),
+        url = $form.attr('action' ); 
+		
+		cleaned_user_adresse = $('#user_adresse').val() ;
+		cleaned_user_date = parseInt($('#user_date').val()) ; 
+		cleaned_user_n_results = parseInt($('#user_number_of_result').val()) ;
+		cleaned_user_use_precise_localisation = 1 ; 
+		if ($("#user_use_precise_localisation").prop('checked') == true) {
+			cleaned_user_use_precise_localisation = 1 ; 
+		} else {
+			cleaned_user_use_precise_localisation = 0 ; 
+		}  
+		
+    	 
+		/* http://locationiq.org/#docs 
+		http://locationiq.org/v1/search.php?key=c32836f0d85454b3e5b4&format=json&q=26%20rue%2Vieille%20du%20temple,%20Paris  */
+		
+		var uri = encodeURI('https://www.geohistoricaldata.org/geocoding/geocoding.php?adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation);
+		//var uri = encodeURI('http://locationiq.org/v1/search.php?key=c32836f0d85454b3e5b4'+'&format=json'+'&q='+cleaned_user_adresse+',FRANCE');
+		//alert('uri : ' + uri) ; 
+		
+		var win = window.open(uri, '_blank');
+			if (win) {
+				//Browser has allowed it to be opened
+				win.focus();
+			} else {
+				//Browser has blocked it
+				alert('Popup was blocked : open this link to get geocoding result : \n'+uri);
+			}
+		
+		 
+      }); 
+</script> 
+</html>
+
+
+
