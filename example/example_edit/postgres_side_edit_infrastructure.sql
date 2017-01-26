@@ -27,8 +27,75 @@ FROM geocoding_edit.geocoding_results ;
 
 
 -- creating a view, necessary as a wrapper for trigger, allow to avoid having trigger directly on the base table, and ths separate edit coming from user and edit coming from refresh
-CREATE VIEW geocoding_edit.geocoding_results_v AS 
-SELECT *
+DROP TABLE IF EXISTS geocoding_edit.geocoding_results_v ;  
+CREATE TABLE geocoding_edit.geocoding_results_v AS 
+SELECT rank, historical_name, normalised_name, ST_Transform(ST_GeometryN(St_CollectionExtract(geom,1),1),4326)::geometry(point,4326) AS geom
+	, historical_source, aggregated_distance, spatial_precision, confidence_in_result
 FROM geocoding_edit.geocoding_results ; 
+ALTER TABLE geocoding_edit.geocoding_results_v ADD PRIMARY KEY(rank)  ; 
 
+
+DROP TABLE IF EXISTS geocoding_edit.geocoding_results_proxy ; 
+CREATE TABLE IF NOT EXISTS geocoding_edit.geocoding_results_proxy (
+	rank serial primary key
+	, historical_name text
+	, normalised_name text
+	, geom geometry(point,4326)
+	, historical_source text
+	, aggregated_distance float
+	, spatial_precision float
+	, confidence_in_result float
+	, approx_date date
+);
+INSERT INTO geocoding_edit.geocoding_results_proxy 
+SELECT rank, historical_name, normalised_name, ST_Transform(ST_GeometryN(St_CollectionExtract(geom,1),1),4326)::geometry(point,4326) AS geom
+	, historical_source, aggregated_distance, spatial_precision, confidence_in_result 
+	, to_date(hs.default_fuzzy_date::float::int::text,'yyyy') approx_date --adding an approx date for test with geoserver
+FROM geocoding_edit.geocoding_results AS gr
+	LEFT OUTER JOIN geohistorical_object.historical_source AS hs ON (gr.historical_source = hs.short_name);
+
+-- SELECT ((max(rank)+1)::int) FROM geocoding_edit.geocoding_results_proxy  ;
+ALTER SEQUENCE geocoding_edit.geocoding_results_proxy_rank_seq   RESTART WITH 57 ; 
+ 
+-- creating a trigger on geocoding_edit.geocoding_results_proxy so as to insert the de
+
+
+DROP TABLE IF EXISTS geocoding_edit.monitoring; 
+CREATE TABLE IF NOT EXISTS geocoding_edit.monitoring (
+	rank serial primary key
+	, historical_name text
+	, normalised_name text
+	, geom geometry(point,4326)
+	, historical_source text
+	, aggregated_distance float
+	, spatial_precision float
+	, confidence_in_result float
+	, approx_date date
+);
+
+DROP TABLE IF EXISTS geocoding_edit.monitoring; 
+CREATE TABLE IF NOT EXISTS geocoding_edit.monitoring AS 
+SELECT pid, 'start'::text as operation, usename,application_name, client_addr, client_port, backend_start, xact_start 
+	,now() as now	 
+	,to_hex(trunc(EXTRACT(EPOCH FROM backend_start))::integer) || '.' || to_hex(pid) AS uid
+FROM pg_stat_activity WHERE pid = pg_backend_pid();
+
+
+SELECT *
+FROM geocoding_edit.monitoring 
+ORDER BY now;
+
+
+/*here we could generate the temporary table */
+INSERT INTO geocoding_edit.monitoring SELECT pid, 'start'::text as operation, usename,application_name, client_addr, client_port, backend_start, xact_start 
+	,now() as now	 
+	,to_hex(trunc(EXTRACT(EPOCH FROM backend_start))::integer) || '.' || to_hex(pid) AS uid
+FROM pg_stat_activity WHERE pid = pg_backend_pid();
+
+
+/*here we could generate the temporary table */
+INSERT INTO geocoding_edit.monitoring SELECT pid, 'stop'::text as operation, usename,application_name, client_addr, client_port, backend_start, xact_start 
+	,now() as now	 
+	,to_hex(trunc(EXTRACT(EPOCH FROM backend_start))::integer) || '.' || to_hex(pid) AS uid
+FROM pg_stat_activity WHERE pid = pg_backend_pid();
 
