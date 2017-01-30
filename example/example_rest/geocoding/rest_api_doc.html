@@ -838,12 +838,12 @@ margin-bottom: 20px;
                       <article id="api-Default-geocodeAdresse-0" data-group="User" data-name="geocodeAdresse" data-version="0">
                         <div class="pull-left">
                           <h1>geocodeAdresse</h1>
-                          <p>Sending an adresse, date, and parameters, returns potential localisation candidates for this adresse</p>
+                          <p>Sending an adresse, date, and parameters, returns potential localisation candidates for this adresse, OR write the candidates in a dedicated table and returns a random unique id (ruid)</p>
                         </div>
                         <div class="pull-right"></div>
                         <div class="clearfix"></div>
                         <p></p>
-                        <p class="marked">Given an adresse and a date, tryies to find the best localisation on the map based on available historical data. Use variable user defined ranking to provide the best results. Can provide precise localisation (house number), or rough localisation (street, neighbourhood, city). Proposed localisation are fully linked to historical source, and their spatial precision is evaluated</p>
+                        <p class="marked">Given an adresse and a date, tryies to find the best localisation on the map based on available historical data. Use variable user defined ranking to provide the best results. Can provide precise localisation (house number), or rough localisation (street, neighbourhood, city). Proposed localisation are fully linked to historical source, and their spatial precision is evaluated. The output is either the list of the potential candidates, or the candidates can be added to a result table, and then can be veiwed and edited thanks to random unique id that this api will returns.</p>
                         <p></p>
                         <br />
                         <pre class="prettyprint language-html prettyprinted" data-type="get"><code><span class="pln">/</span></code></pre>
@@ -864,7 +864,7 @@ margin-bottom: 20px;
 
                         <div class="tab-content">
                           <div class="tab-pane active" id="examples-Default-geocodeAdresse-0-curl">
-                            <pre class="prettyprint"><code class="language-bsh">curl -X <span style="text-transform: uppercase;">get</span> "http://geohistoricaldata.org/geocoding/geocoding.php/?adresse=&date=&numberOfResults=&usePreciseLocalisation="</code></pre>
+                            <pre class="prettyprint"><code class="language-bsh">curl -X <span style="text-transform: uppercase;">get</span> "http://geohistoricaldata.org/geocoding/geocoding.php/?adresse=&date=&numberOfResults=&usePreciseLocalisation=&outputForInteractiveEditing="</code></pre>
                           </div>
                           <div class="tab-pane" id="examples-Default-geocodeAdresse-0-java">
                             <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
@@ -884,8 +884,9 @@ public class DefaultApiExample {
         Boolean usePreciseLocalisation = true; // Boolean | If set to `true` (or `1`), the proposed results will be house number adresses (e.g. `12 rue du temple, Paris`). If set to `false` (or `0`), the proposed adresses may be street (e.g. `Rue du temple, Paris`), neighbourhood (e.g. `quartier du temple, Paris`), or even city (e.g. `commune de Temple les bains`).
         Integer date = 56; // Integer | The historical date of the adresse, it should be between `1800` and `2100`. The best historical source will be selected (partially) according to this date
         Integer numberOfResults = 56; // Integer | The geocoder will provide at most this number of geocoded adresses, ranked from best to worst. Use `1` if you want only the best result. Default to `1`.
+        Boolean outputForInteractiveEditing = true; // Boolean | If set to `true` (or `1`), the geocoding result candidates will be stored inside a result table, and a random unique id (ruid) will be returned. This ruid is then necessary to view adn interactively edit the results.
         try {
-            array[adresse_result] result = apiInstance.geocodeAdresse(adresse, usePreciseLocalisation, date, numberOfResults);
+            array[adresse_result] result = apiInstance.geocodeAdresse(adresse, usePreciseLocalisation, date, numberOfResults, outputForInteractiveEditing);
             System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#geocodeAdresse");
@@ -906,8 +907,9 @@ public class DefaultApiExample {
         Boolean usePreciseLocalisation = true; // Boolean | If set to `true` (or `1`), the proposed results will be house number adresses (e.g. `12 rue du temple, Paris`). If set to `false` (or `0`), the proposed adresses may be street (e.g. `Rue du temple, Paris`), neighbourhood (e.g. `quartier du temple, Paris`), or even city (e.g. `commune de Temple les bains`).
         Integer date = 56; // Integer | The historical date of the adresse, it should be between `1800` and `2100`. The best historical source will be selected (partially) according to this date
         Integer numberOfResults = 56; // Integer | The geocoder will provide at most this number of geocoded adresses, ranked from best to worst. Use `1` if you want only the best result. Default to `1`.
+        Boolean outputForInteractiveEditing = true; // Boolean | If set to `true` (or `1`), the geocoding result candidates will be stored inside a result table, and a random unique id (ruid) will be returned. This ruid is then necessary to view adn interactively edit the results.
         try {
-            array[adresse_result] result = apiInstance.geocodeAdresse(adresse, usePreciseLocalisation, date, numberOfResults);
+            array[adresse_result] result = apiInstance.geocodeAdresse(adresse, usePreciseLocalisation, date, numberOfResults, outputForInteractiveEditing);
             System.out.println(result);
         } catch (ApiException e) {
             System.err.println("Exception when calling DefaultApi#geocodeAdresse");
@@ -925,14 +927,16 @@ public class DefaultApiExample {
 Boolean *usePreciseLocalisation = true; // If set to `true` (or `1`), the proposed results will be house number adresses (e.g. `12 rue du temple, Paris`). If set to `false` (or `0`), the proposed adresses may be street (e.g. `Rue du temple, Paris`), neighbourhood (e.g. `quartier du temple, Paris`), or even city (e.g. `commune de Temple les bains`). (default to true)
 Integer *date = 56; // The historical date of the adresse, it should be between `1800` and `2100`. The best historical source will be selected (partially) according to this date (optional) (default to 1870)
 Integer *numberOfResults = 56; // The geocoder will provide at most this number of geocoded adresses, ranked from best to worst. Use `1` if you want only the best result. Default to `1`. (optional) (default to 1)
+Boolean *outputForInteractiveEditing = true; // If set to `true` (or `1`), the geocoding result candidates will be stored inside a result table, and a random unique id (ruid) will be returned. This ruid is then necessary to view adn interactively edit the results. (optional) (default to false)
 
 DefaultApi *apiInstance = [[DefaultApi alloc] init];
 
-// Sending an adresse, date, and parameters, returns potential localisation candidates for this adresse
+// Sending an adresse, date, and parameters, returns potential localisation candidates for this adresse, OR write the candidates in a dedicated table and returns a random unique id (ruid)
 [apiInstance geocodeAdresseWith:adresse
     usePreciseLocalisation:usePreciseLocalisation
     date:date
     numberOfResults:numberOfResults
+    outputForInteractiveEditing:outputForInteractiveEditing
               completionHandler: ^(array[adresse_result] output, NSError* error) {
                             if (output) {
                                 NSLog(@"%@", output);
@@ -955,7 +959,8 @@ var usePreciseLocalisation = true; // {Boolean} If set to `true` (or `1`), the p
 
 var opts = { 
   'date': 56, // {Integer} The historical date of the adresse, it should be between `1800` and `2100`. The best historical source will be selected (partially) according to this date
-  'numberOfResults': 56 // {Integer} The geocoder will provide at most this number of geocoded adresses, ranked from best to worst. Use `1` if you want only the best result. Default to `1`.
+  'numberOfResults': 56, // {Integer} The geocoder will provide at most this number of geocoded adresses, ranked from best to worst. Use `1` if you want only the best result. Default to `1`.
+  'outputForInteractiveEditing': true // {Boolean} If set to `true` (or `1`), the geocoding result candidates will be stored inside a result table, and a random unique id (ruid) will be returned. This ruid is then necessary to view adn interactively edit the results.
 };
 
 var callback = function(error, data, response) {
@@ -991,11 +996,12 @@ namespace Example
             var usePreciseLocalisation = true;  // Boolean | If set to `true` (or `1`), the proposed results will be house number adresses (e.g. `12 rue du temple, Paris`). If set to `false` (or `0`), the proposed adresses may be street (e.g. `Rue du temple, Paris`), neighbourhood (e.g. `quartier du temple, Paris`), or even city (e.g. `commune de Temple les bains`). (default to true)
             var date = 56;  // Integer | The historical date of the adresse, it should be between `1800` and `2100`. The best historical source will be selected (partially) according to this date (optional)  (default to 1870)
             var numberOfResults = 56;  // Integer | The geocoder will provide at most this number of geocoded adresses, ranked from best to worst. Use `1` if you want only the best result. Default to `1`. (optional)  (default to 1)
+            var outputForInteractiveEditing = true;  // Boolean | If set to `true` (or `1`), the geocoding result candidates will be stored inside a result table, and a random unique id (ruid) will be returned. This ruid is then necessary to view adn interactively edit the results. (optional)  (default to false)
 
             try
             {
-                // Sending an adresse, date, and parameters, returns potential localisation candidates for this adresse
-                array[adresse_result] result = apiInstance.geocodeAdresse(adresse, usePreciseLocalisation, date, numberOfResults);
+                // Sending an adresse, date, and parameters, returns potential localisation candidates for this adresse, OR write the candidates in a dedicated table and returns a random unique id (ruid)
+                array[adresse_result] result = apiInstance.geocodeAdresse(adresse, usePreciseLocalisation, date, numberOfResults, outputForInteractiveEditing);
                 Debug.WriteLine(result);
             }
             catch (Exception e)
@@ -1016,9 +1022,10 @@ $adresse = adresse_example; // String | Adresse to be geocoded, including city. 
 $usePreciseLocalisation = true; // Boolean | If set to `true` (or `1`), the proposed results will be house number adresses (e.g. `12 rue du temple, Paris`). If set to `false` (or `0`), the proposed adresses may be street (e.g. `Rue du temple, Paris`), neighbourhood (e.g. `quartier du temple, Paris`), or even city (e.g. `commune de Temple les bains`).
 $date = 56; // Integer | The historical date of the adresse, it should be between `1800` and `2100`. The best historical source will be selected (partially) according to this date
 $numberOfResults = 56; // Integer | The geocoder will provide at most this number of geocoded adresses, ranked from best to worst. Use `1` if you want only the best result. Default to `1`.
+$outputForInteractiveEditing = true; // Boolean | If set to `true` (or `1`), the geocoding result candidates will be stored inside a result table, and a random unique id (ruid) will be returned. This ruid is then necessary to view adn interactively edit the results.
 
 try {
-    $result = $api_instance->geocodeAdresse($adresse, $usePreciseLocalisation, $date, $numberOfResults);
+    $result = $api_instance->geocodeAdresse($adresse, $usePreciseLocalisation, $date, $numberOfResults, $outputForInteractiveEditing);
     print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->geocodeAdresse: ', $e->getMessage(), PHP_EOL;
@@ -1182,10 +1189,45 @@ try {
 </td>
 </tr>
 
+                                <tr><td style="width:150px;">outputForInteractiveEditing</td>
+<td>
+
+
+<script>
+												$(document).ready(function() {
+													var schemaWrapper = {
+  "name" : "output_for_interactive_editing",
+  "in" : "query",
+  "description" : "If set to `true` (or `1`), the geocoding result candidates will be stored inside a result table, and a random unique id (ruid) will be returned. This ruid is then necessary to view adn interactively edit the results.",
+  "required" : false,
+  "type" : "boolean",
+  "default" : false,
+  "format" : "boolean"
+};
+													var schema = schemaWrapper;
+
+
+
+
+													var view = new JSONSchemaView(schema,1);
+													var result = $('#d2e199_geocodeAdresse_outputForInteractiveEditing');
+													result.empty();
+													result.append(view.render());
+
+
+
+
+
+												});
+												</script>
+												<div id="d2e199_geocodeAdresse_outputForInteractiveEditing"></div>
+</td>
+</tr>
+
                             </table>
 
                           <h2>Responses</h2>
-                            <h3> Status: 200 - Adresse candidates found </h3>
+                            <h3> Status: 200 - Adresse candidates found, returning the candidates </h3>
 
                               <ul class="nav nav-tabs nav-tabs-examples" >
                                 <li class="active">
@@ -1204,7 +1246,7 @@ try {
                                     <script>
                                       $(document).ready(function() {
                                         var schemaWrapper = {
-  "description" : "Adresse candidates found",
+  "description" : "Adresse candidates found, returning the candidates",
   "schema" : {
     "type" : "array",
     "items" : {
@@ -1254,6 +1296,59 @@ try {
                                     <pre class="prettyprint"><code class="json">{rank&#x3D;1, historical_name&#x3D;12, r. du temple, normalised_name&#x3D;12 rue du temple, paris, geom&#x3D;POINT(0,0), historical_source&#x3D;jacoubet_paris, numerical_origin_process&#x3D;jacoubet_paris_number, semantic_distance&#x3D;0.15, temporal_distance&#x3D;65, number_distance&#x3D;2, scale_distance&#x3D;0, spatial_distance&#x3D;0, aggregated_distance&#x3D;0.258, spatial_precision&#x3D;5, confidence_in_result&#x3D;1}</code></pre>
                                   </div>
                               </div>
+                            <h3> Status: 300 - Adresse candidates found, returning ruid for interactive editing </h3>
+
+                              <ul class="nav nav-tabs nav-tabs-examples" >
+                                <li class="active">
+                                  <a href="#examples-Default-geocodeAdresse-schema">Schema</a>
+                                </li>
+
+                                  <li class="">
+                                    <a href="#examples-Default-geocodeAdresse-example">Response Example</a>
+                                  </li>
+                              </ul>
+
+                              <div class="tab-content" style='margin-bottom: 10px;'>
+                                <div class="tab-pane active" id="examples-Default-geocodeAdresse-schema">
+                                  <div id='examples-Default-geocodeAdresse-schema-300' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+
+                                    <script>
+                                      $(document).ready(function() {
+                                        var schemaWrapper = {
+  "description" : "Adresse candidates found, returning ruid for interactive editing",
+  "schema" : {
+    "type" : "string"
+  },
+  "examples" : {
+    "application/json" : {
+      "ruid" : "htnwbacokfqivxjmoqmxywjaoltbtgxp "
+    }
+  }
+};
+                                        var schema = schemaWrapper.schema;
+                                        schemaWrapper.definitions = defs;
+                                        //console.log(JSON.stringify(schema))
+                                        JsonRefs.resolveRefs(schemaWrapper, {
+                                            "depth": 3,
+                                            "resolveRemoteRefs": false,
+                                            "resolveFileRefs": false
+                                        }, function(err, resolved, metadata) {
+                                          //console.log(JSON.stringify(resolved));
+                                          var view = new JSONSchemaView(resolved.schema, 3);
+                                          $('#examples-Default-geocodeAdresse-schema-data').val(JSON.stringify(resolved.schema));
+                                          var result = $('#examples-Default-geocodeAdresse-schema-300');
+                                          result.empty();
+                                          result.append(view.render());
+                                        });
+                                      });
+                                    </script>
+                                  </div>
+                                  <input id='examples-Default-geocodeAdresse-schema-data' type='hidden' value=''></input>
+                                </div>
+                                  <div class="tab-pane" id="examples-Default-geocodeAdresse-example">
+                                    <pre class="prettyprint"><code class="json">{ruid&#x3D;htnwbacokfqivxjmoqmxywjaoltbtgxp }</code></pre>
+                                  </div>
+                              </div>
                         </article>
                       </div>
                       <hr>
@@ -1270,7 +1365,7 @@ try {
           </div>
           <div id="generator">
             <div class="content">
-              Generated 2017-01-19T11:15:25.868Z
+              Generated 2017-01-30T10:54:05.534Z
             </div>
           </div>
       </div>

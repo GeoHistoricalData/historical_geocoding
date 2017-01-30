@@ -68,35 +68,73 @@ function sanitize_input(&$adresse,&$date,&$n_results){
 }
     
 
-function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisation){
+function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisation,$interactive_return){
     $dbconn = connect_to_db() ;
-    /*prepare query and send it*/
-    $query = " 
-    SELECT rank::text, historical_name::text, normalised_name::text
-        , CASE WHEN ST_NumGeometries(geom2) =1 THEN ST_AsText(ST_GeometryN(geom2,1)) ELSE ST_AsText(geom2) END AS geom
-        , historical_source::text, numerical_origin_process::text
-        , historical_geocoding.round(semantic_distance::float,3 )as semantic_distance , historical_geocoding.round(temporal_distance::float,3) AS temporal_distance
-        , historical_geocoding.round(number_distance::float,3) number_distance, historical_geocoding.round(scale_distance::float,3) scale_distance, historical_geocoding.round(spatial_distance::float,3) spatial_distance 
-        , historical_geocoding.round(aggregated_distance::float,6) aggregated_distance
-        , historical_geocoding.round(spatial_precision::float,2) spatial_precision
-        , historical_geocoding.round(confidence_in_result::float,3) confidence_in_result
-    FROM historical_geocoding.geocode_name_foolproof(
-    query_adress:=$1,
-    query_date:= sfti_makesfti($2::integer) ,
-    use_precise_localisation:= $4::integer::boolean ,
-    max_number_of_candidates:=$3::integer
-      ) As f
-    ,ST_SnapToGrid(geom,0.01) AS geom2 ; " ;
-    $result = pg_query_params($dbconn, $query, array($adresse,$date,$n_results,$precise_localisation));
-    if (!$result) {
-      echo "geocoding found no suitable result, have you indicated the city? : 12 rue du temple, PARIS\n";
-      exit;
-    }
-    $all_res_row = pg_fetch_all($result);
+	
+	// case when we do need the results
+	if ($interactive_return == false) {
+		/*prepare query and send it*/
+		$query = " 
+		SELECT rank::text, historical_name::text, normalised_name::text
+			, CASE WHEN ST_NumGeometries(geom2) =1 THEN ST_AsText(ST_GeometryN(geom2,1)) ELSE ST_AsText(geom2) END AS geom
+			, historical_source::text, numerical_origin_process::text
+			, historical_geocoding.round(semantic_distance::float,3 )as semantic_distance , historical_geocoding.round(temporal_distance::float,3) AS temporal_distance
+			, historical_geocoding.round(number_distance::float,3) number_distance, historical_geocoding.round(scale_distance::float,3) scale_distance, historical_geocoding.round(spatial_distance::float,3) spatial_distance 
+			, historical_geocoding.round(aggregated_distance::float,6) aggregated_distance
+			, historical_geocoding.round(spatial_precision::float,2) spatial_precision
+			, historical_geocoding.round(confidence_in_result::float,3) confidence_in_result
+		FROM historical_geocoding.geocode_name_foolproof(
+		query_adress:=$1,
+		query_date:= sfti_makesfti($2::integer) ,
+		use_precise_localisation:= $4::integer::boolean ,
+		max_number_of_candidates:=$3::integer
+		  ) As f
+		,ST_SnapToGrid(geom,0.01) AS geom2 ; " ;
+		$result = pg_query_params($dbconn, $query, array($adresse,$date,$n_results,$precise_localisation));
+		if (!$result) {
+		  echo "geocoding found no suitable result, have you indicated the city? : 12 rue du temple, PARIS\n";
+		  exit;
+		}
+		$all_res_row = pg_fetch_all($result);
 
-    //print(" <br> results : ".print_r($all_res_row,true)." <br>end result<br> \n");
-    pg_close($dbconn) ;
-    return $all_res_row; 
+		//print(" <br> results : ".print_r($all_res_row,true)." <br>end result<br> \n");
+		pg_close($dbconn) ;
+		return $all_res_row; 
+	} else{
+		//case when the geocoding results are written in the result table, and a random unique identifier is returned.
+		$query = "  
+		WITH inserting AS (
+			INSERT INTO geocoding_edit.geocoding_results (rank, historical_name, normalised_name ,  geom , historical_source, numerical_origin_process ,semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance , aggregated_distance, spatial_precision, confidence_in_result  ,  ruid)
+			SELECT rank::int, historical_name::text, normalised_name::text
+				, geom2 
+				, historical_source::text, numerical_origin_process::text
+				, historical_geocoding.round(semantic_distance::float,3 ) , historical_geocoding.round(temporal_distance::float,3) 
+				, historical_geocoding.round(number_distance::float,3) , historical_geocoding.round(scale_distance::float,3)  , historical_geocoding.round(spatial_distance::float,3)  
+				, historical_geocoding.round(aggregated_distance::float,6) 
+				, historical_geocoding.round(spatial_precision::float,2) 
+				, historical_geocoding.round(confidence_in_result::float,3)  
+				, ruid 
+			FROM historical_geocoding.geocode_name_foolproof(
+			query_adress:=$1,
+			query_date:= sfti_makesfti($2::integer) ,
+			use_precise_localisation:= $4::integer::boolean ,
+			max_number_of_candidates:=$3::integer
+			  ) As f
+			,ST_Transform(ST_Centroid(ST_SnapToGrid(geom,0.01)),4326) AS geom2
+			, geocoding_edit.make_ruid() AS ruid
+		RETURNING ruid 
+		)SELECT ruid FROM inserting LIMIT 1 ; " ;
+		$result = pg_query_params($dbconn, $query, array($adresse,$date,$n_results,$precise_localisation));
+		if (!$result) {
+		  echo "geocoding found no suitable result, have you indicated the city? : 12 rue du temple, PARIS\n";
+		  exit;
+		}
+		$all_res_row = pg_fetch_all($result);
+
+		//print(" <br> results : ".print_r($all_res_row,true)." <br>end result<br> \n");
+		pg_close($dbconn) ;
+		return $all_res_row;
+	}
 
 }
 
@@ -109,14 +147,22 @@ $app->get('/', function ($request, $response, $args) {
     $date = intval($request->getQueryParam("date", $default = "1870"));
     $n_results = intval($request->getQueryParam("number_of_results", $default = "1"));
     $precise_localisation =(int)boolval($request->getQueryParam("use_precise_localisation", $default = "TRUE"));
+	$interactive_return =boolval($request->getQueryParam("output_for_interactive_editing", $default = "FALSE"));
 
     sanitize_input($adresse,$date,$n_results);
-
-    $json_results = retrieve_results_from_db($adresse,$date,$n_results,$precise_localisation);
+	
+	if 	($interactive_return==false){
+		$json_results = retrieve_results_from_db($adresse,$date,$n_results,$precise_localisation,$interactive_return);
+		return $response->withStatus(200)->write(json_encode($json_results));
+	}else{
+		$json_results = retrieve_results_from_db($adresse,$date,$n_results,$precise_localisation,$interactive_return);
+		return $response->withStatus(300)->write(json_encode($json_results));
+	}
+		
     
 
 
-    return $response->withStatus(200)->write(json_encode($json_results));
+    
     //return $response->withStatus(200)->write($n_results);
 });
 
