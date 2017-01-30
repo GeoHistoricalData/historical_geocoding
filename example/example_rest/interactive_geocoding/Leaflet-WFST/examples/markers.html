@@ -74,6 +74,10 @@
 <script src="editableMarkercluster/leaflet.markercluster.editablemarker.js"></script>
 <script src="lib/L.Control.Sidebar.js"></script>
 <script src="../dist/Leaflet-WFST.src.js"></script>
+<!--
+<script src="../../Proj4Leaflet/lib/proj4.js"></script>
+<script src="../../Proj4Leaflet/src/proj4leaflet.js"></script>
+-->
 <script>
   var spinnerOptions = {
     lines: 15, // The number of lines to draw.
@@ -129,11 +133,30 @@
   });
   map.addControl(sidebar);
 
+  //https://www.geohistoricaldata.org/geoserver/paris/wms?service=WMS&version=1.1.0&request=GetMap&layers=paris:alphand_poubelle&styles=&bbox=593823.90581,124170.62504686306,605765.4568006695,133625.385371&width=768&height=608&srs=EPSG:27571&format=image%2Fjpeg
+  /*
+  var crs_lamb1 = new L.Proj.CRS('EPSG:27571',
+  '+proj=lcc +lat_1=49.50000000000001 +lat_0=49.50000000000001 +lon_0=0 +k_0=0.999877341 +x_0=600000 +y_0=1200000 +a=6378249.2 +b=6356515 +towgs84=-168,-60,320,0,0,0,0 +pm=paris +units=m +no_defs',
+  {
+    resolutions: [
+      8192, 4096, 2048, 1024, 512, 256, 128
+    ],
+    origin: [0, 0]
+  })
+  */
+  //https://www.geohistoricaldata.org/geoserver/paris/wms?SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&LAYERS=paris%3Aalphand_poubelle&STYLES=&FORMAT=image%2Fjpg&TRANSPARENT=false&HEIGHT=256&WIDTH=256&SRS=EPSG%3A4326&BBOX=-90,0,0,66.51326044311185
 
+  L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
+    layers: 'alphand_poubelle',
+    //format: 'image/jpeg',
+    crs: L.CRS.EPSG4326,
+    //srs: 'EPSG:4326'
+  }).addTo(map);
+ /* 
   L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
-
+*/
   var markers = new L.MarkerClusterGroup({
     showCoverageOnHover: false
   }).addTo(map);
@@ -178,16 +201,16 @@
   var wfst = new L.WFST({
     url: 'https://www.geohistoricaldata.org/geoserver/ows',
     typeNS: 'geocoding',
-    typeName: 'geocoding_results_v',
+    typeName: 'geocoding_results_proxy',
     crs: L.CRS.EPSG4326,
-    geometryField: 'ogr_geometry',
+    geometryField: 'geom',
     maxFeatures:100,
     pointToLayer: function (featureData, latlng) {
       return createEditableMarker(latlng);
     }
   });
   //https://www.geohistoricaldata.org/geoserver/geocoding/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=geocoding:geocoding_results_v&maxFeatures=50&outputFormat=application%2Fgml%2Bxml%3B+version%3D3.2
-
+  //https://www.geohistoricaldata.org/geoserver/geocoding/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=geocoding:geocoding_results_proxy&maxFeatures=50&outputFormat=application%2Fgml%2Bxml%3B+version%3D3.2
   var showSidebar = function (marker) {
     sidebar._marker = marker;
 
