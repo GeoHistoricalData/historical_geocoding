@@ -90,7 +90,7 @@ paths:
               aggregated_distance: 0.258
               spatial_precision: 5
               confidence_in_result: 1
-        '300':
+        '201':
           description: Adresse candidates found, returning ruid for interactive editing
           schema:
             type: string 
