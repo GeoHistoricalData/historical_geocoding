@@ -29,6 +29,22 @@
 <body>
 <div id="map"></div>
 
+<div id="sidebar_adress">
+  <h1 id="title"> Geocoding historical adresses</h1>
+  <form id="formoid" action="formoid" method="post" >
+  <label for="Adresse">Adresse :</label> 
+  <input type="textarea" id="user_adresse" placeholder="ex : 12 rue du temple, Paris" name="user_adresse" value="12 rue du temple, Paris" /> <br>
+  <label for="Date">Date :</label>
+  <input type="number" id="user_date" placeholder="ex : 1875" name="user_date" min="1800" max="2144" value="1860"/> <br>
+  <label for="Date">Maximum number of results :</label>
+  <input type="number" id="user_number_of_result" placeholder="ex : 4" name="user_number_of_result" min="1" max="300" value="1"/><br>
+  <label for="Date">Do you want precise (house number) or rough (street, neighboourhood, city) localisation</label>
+  <input type="hidden" value='0' name="user_use_precise_localisation"/> <br>
+  <input type="checkbox" id="user_use_precise_localisation" name="user_use_precise_localisation" value="1" checked/> <br>
+  <input id="geocodeButton" type="button" value="Geocode!" enabled/>
+  </form>
+</div>
+
 <!--<div id="sidebar">
   <h1 id="title">Point of interests properties</h1>
   <input id="idTextbox" type="text" size="35" name="id" readonly="readonly"/>
@@ -53,7 +69,7 @@
   <label id="tourismLabel" name="tourism">Tourism</label><br>
   <input id="applyButton" type="button" value="Apply" enabled/>
 </div>-->
-
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 <script src="lib/spin.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
 <!--<script src="../../Leaflet/leaflet.js"></script>-->
@@ -67,7 +83,10 @@
 <script src="./geocoding_form.js"></script>
 <script>
  // Note : spinner is an annimation that plays while loading
-
+  var geocoding = {
+    ruid: "c602fb0264056e0d6200ee85c93d6e53",
+    ruid_short: function() {return String(this.ruid).substring(0,12);}
+  };
   var map = L.map('map').setView([0, 0], 2);
 
   var disableMapInteractions = function () {
@@ -95,6 +114,99 @@
   };
 
   disableMapInteractions();
+
+  var sidebar_adress = L.control.sidebar('sidebar_adress',{
+    position: 'right'
+  });
+ 
+  sidebar_adress._onBtnClick = function () {
+    // function called when clicking on the button of the adress sidebar
+    // should send the adresse parameter to the REST API and store result
+    cleaned_user_adresse = document.getElementById('user_adresse').value ;
+    cleaned_user_date = parseInt(document.getElementById('user_date').value) ; 
+    cleaned_user_n_results = parseInt(document.getElementById('user_number_of_result').value) ;
+    cleaned_user_use_precise_localisation = document.getElementById('user_use_precise_localisation').checked ;
+    var base_path = "https://www.geohistoricaldata.org/geocoding/geocoding.php"
+    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&outputForInteractiveEditing=True');
+
+    console.log(base_path+"?"+dataString+"&callback=?");    
+
+    test = $.ajax({
+      type: "GET",
+      url: base_path+"?"+dataString,//+"&callback=?",
+      dataType: 'JSONP',
+      success: function(data){
+        alert("sucessfully wrote ruid");
+        console.log(data);
+        geocoding.ruid = data["ruid"];
+      },
+      error: function(jqXHR, textStatus, errorThrown){
+        //alert("error in sending your adresse to geocoder server: "+jqXHR.toSource()+textStatus.toSource()+errorThrown.toSource());
+        //console.log('jqXHR',jqXHR);
+        if(jqXHR.status==201){
+            // we received the expected answer, writting new ruid, loading point from server 
+            console.log(jqXHR);
+            //alert(JSON.parse(jqXHR.responseText)["ruid"]);
+            geocoding.ruid = JSON.parse(jqXHR.responseText)[0]["ruid"];
+            //alert(geocoding.ruid);
+            
+	    wfst = new L.WFST({
+              url: 'https://www.geohistoricaldata.org/geoserver/ows',
+	      typeNS: 'geocoding',
+	      typeName: 'geocoding_results_v',
+	      crs: L.CRS.EPSG4326,
+	      geometryField: 'geom',
+	      maxFeatures:100,
+	      pointToLayer: function (featureData, latlng) {
+                return createEditableMarker(latlng);
+	      },
+              filter: new L.Filter.EQ().append('ruid',geocoding.ruid_short()) 
+	      });
+             //alert(geocoding.ruid_short());      
+	     wfst.on('load', function (e) {
+			     spinner.stop();
+			     enableMapInteractions();
+
+			     markers.clearLayers();
+
+			     e.target.eachLayer(function (layer) {
+				     addWfstMarker(layer);
+				     });
+
+			     if (isFirstLoad) {
+			     //map.fitBounds(markers);
+			     isFirstLoad = false;
+			     }
+
+			     loadFinished = true;
+			     });
+
+	     wfst.on('save:success', function (data) {
+			     spinner.stop();
+			     });
+
+	     wfst.on('save:error', function (data) {
+			     spinner.stop();
+
+			     alert('WFS-T save error occured. Take a look to console.');
+			     console.error('WFS-T save error');
+			     console.error(data);
+			     });
+
+          }else{
+          //alert("error in sending your adresse to geocoder server: "+jqXHR+textStatus+errorThrown);
+        }
+        }
+    });
+    //alert('ruid: ' + geocoding.ruid_short() ) ; 
+    return;
+  };
+
+  map.addControl(sidebar_adress) ; 
+  sidebar_adress.show();
+  var geocodeBtn = document.getElementById('geocodeButton')
+  L.DomEvent.on(geocodeBtn, 'click', sidebar_adress._onBtnClick);
+
 
 //  var sidebar = L.control.sidebar('sidebar', {
 //    position: 'right'
@@ -167,17 +279,6 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     }
   });
  */
-  var wfst = new L.WFST({
-    url: 'https://www.geohistoricaldata.org/geoserver/ows',
-    typeNS: 'geocoding',
-    typeName: 'geocoding_results_proxy',
-    crs: L.CRS.EPSG4326,
-    geometryField: 'geom',
-    maxFeatures:100,
-    pointToLayer: function (featureData, latlng) {
-      return createEditableMarker(latlng);
-    }
-  });
 
 
   var addWfstMarker = function (marker) {
@@ -197,36 +298,6 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
       wfst.addLayer(marker);
     }
   };
-
-  wfst.on('load', function (e) {
-    spinner.stop();
-    enableMapInteractions();
-
-    markers.clearLayers();
-
-    e.target.eachLayer(function (layer) {
-      addWfstMarker(layer);
-    });
-
-    if (isFirstLoad) {
-      map.fitBounds(markers);
-      isFirstLoad = false;
-    }
-
-    loadFinished = true;
-  });
-
-  wfst.on('save:success', function (data) {
-    spinner.stop();
-  });
-
-  wfst.on('save:error', function (data) {
-    spinner.stop();
-
-    alert('WFS-T save error occured. Take a look to console.');
-    console.error('WFS-T save error');
-    console.error(data);
-  });
 
   new L.Toolbar.Control({
     position: 'topleft',
