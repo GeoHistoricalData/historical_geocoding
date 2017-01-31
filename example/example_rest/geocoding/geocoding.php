@@ -156,7 +156,7 @@ $app->get('/', function ($request, $response, $args) {
 		return $response->withStatus(200)->write(json_encode($json_results));
 	}else{
 		$json_results = retrieve_results_from_db($adresse,$date,$n_results,$precise_localisation,$interactive_return);
-		return $response->withStatus(201)->write(json_encode($json_results[0]));
+		return $response->withStatus(201)->write(json_encode($json_results));
 	}
 		
     
