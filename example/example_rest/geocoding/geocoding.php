@@ -147,7 +147,7 @@ $app->get('/', function ($request, $response, $args) {
     $date = intval($request->getQueryParam("date", $default = "1870"));
     $n_results = intval($request->getQueryParam("number_of_results", $default = "1"));
     $precise_localisation =(int)boolval($request->getQueryParam("use_precise_localisation", $default = "TRUE"));
-	$interactive_return =boolval($request->getQueryParam("output_for_interactive_editing", $default = "0"));
+	$interactive_return =(int)(bool)intval($request->getQueryParam("output_for_interactive_editing", $default = "0"));
 
     sanitize_input($adresse,$date,$n_results);
 	
