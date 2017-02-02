@@ -285,7 +285,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     marker.on('marker:deleted', function () {
       wfst.removeLayer(marker);
     });
-
+    marker.setIcon(marker.options.editModeIcon);
     if (!markers.hasLayer(marker)) {
       markers.addLayer(marker);
     }
