@@ -141,63 +141,55 @@
         geocoding.ruid = data["ruid"];
       },
       error: function(jqXHR, textStatus, errorThrown){
-        //alert("error in sending your adresse to geocoder server: "+jqXHR.toSource()+textStatus.toSource()+errorThrown.toSource());
         //console.log('jqXHR',jqXHR);
         if(jqXHR.status==201){
-            // we received the expected answer, writting new ruid, loading point from server 
-            console.log(jqXHR);
-            //alert(JSON.parse(jqXHR.responseText)["ruid"]);
-            geocoding.ruid = JSON.parse(jqXHR.responseText)[0]["ruid"];
-            //alert(geocoding.ruid);
+          // we received the expected answer, writting new ruid, loading point from server 
+          console.log(jqXHR); 
+          geocoding.ruid = JSON.parse(jqXHR.responseText)[0]["ruid"]; 
             
-	    wfst = new L.WFST({
-              url: 'https://www.geohistoricaldata.org/geoserver/ows',
-	      typeNS: 'geocoding',
-	      typeName: 'geocoding_results_v',
-	      crs: L.CRS.EPSG4326,
-	      geometryField: 'geom',
-	      maxFeatures:100,
-	      pointToLayer: function (featureData, latlng) {
-                return createEditableMarker(latlng);
-	      },
-              filter: new L.Filter.EQ().append('ruid',geocoding.ruid_short()) 
-	      });
-             //alert(geocoding.ruid_short());      
-	     wfst.on('load', function (e) {
-			     spinner.stop();
-			     enableMapInteractions();
+        wfst = new L.WFST({
+          url: 'https://www.geohistoricaldata.org/geoserver/ows',
+          typeNS: 'geocoding',
+          typeName: 'geocoding_results_v',
+          crs: L.CRS.EPSG4326,
+          geometryField: 'geom',
+          maxFeatures:100,
+          pointToLayer: function (featureData, latlng) {
+            return createEditableMarker(latlng,{
+              dontShowToolbarOnFirstClick: false
+            });
+          },
+          filter: new L.Filter.EQ().append('ruid',geocoding.ruid_short()) 
+        });
+        
+        wfst.on('load', function (e) {
+          spinner.stop();
+          enableMapInteractions();
+          markers.clearLayers(); 
+          e.target.eachLayer(function (layer) {
+              addWfstMarker(layer);
+          });
+          if (isFirstLoad) {
+            isFirstLoad = false;
+          }
+          loadFinished = true;
+           map.fitBounds(markers);
+        });
 
-			     markers.clearLayers();
+        wfst.on('save:success', function (data) {
+          spinner.stop();
+        });
+        wfst.on('save:error', function (data) {
+          spinner.stop();
+          alert('WFS-T save error occured. Take a look to console.');
+          console.error('WFS-T save error');
+          console.error(data);
+        });
 
-			     e.target.eachLayer(function (layer) {
-				     addWfstMarker(layer);
-				     });
-
-			     if (isFirstLoad) {
-			     isFirstLoad = false;
-			     }
-
-			     loadFinished = true;
-	     
-             map.fitBounds(markers);
-	     });
-
-	     wfst.on('save:success', function (data) {
-			     spinner.stop();
-			     });
-
-	     wfst.on('save:error', function (data) {
-			     spinner.stop();
-
-			     alert('WFS-T save error occured. Take a look to console.');
-			     console.error('WFS-T save error');
-			     console.error(data);
-			     });
-
-          }else{
-          //alert("error in sending your adresse to geocoder server: "+jqXHR+textStatus+errorThrown);
+        }else{//ohoh : received a strange return code
+          alert("error in sending your adresse to geocoder server: "+jqXHR+textStatus+errorThrown);
         }
-        }
+      }
     });
     //alert('ruid: ' + geocoding.ruid_short() ) ; 
     return;
@@ -262,6 +254,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
         return content;
       },
       hideToolbarAfterEdit: false
+      
     }, options || {}));
 
     return marker;
