@@ -207,7 +207,7 @@
   sidebar_adress.show();
   var geocodeBtn = document.getElementById('geocodeButton')
   L.DomEvent.on(geocodeBtn, 'click', sidebar_adress._onBtnClick);
-
+  spinner.stop();
 
 //  var sidebar = L.control.sidebar('sidebar', {
 //    position: 'right'
