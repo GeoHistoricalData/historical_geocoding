@@ -127,7 +127,7 @@
     cleaned_user_n_results = parseInt(document.getElementById('user_number_of_result').value) ;
     cleaned_user_use_precise_localisation = document.getElementById('user_use_precise_localisation').checked ;
     var base_path = "https://www.geohistoricaldata.org/geocoding/geocoding.php"
-    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&outputForInteractiveEditing=True');
+    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&output_for_interactive_editing=1');
 
     console.log(base_path+"?"+dataString+"&callback=?");    
 
@@ -174,12 +174,13 @@
 				     });
 
 			     if (isFirstLoad) {
-			     //map.fitBounds(markers);
 			     isFirstLoad = false;
 			     }
 
 			     loadFinished = true;
-			     });
+	     
+             map.fitBounds(markers);
+	     });
 
 	     wfst.on('save:success', function (data) {
 			     spinner.stop();
@@ -213,17 +214,19 @@
 //  });
 //  map.addControl(sidebar);
 
+/*
 L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     layers: 'alphand_poubelle',
     //format: 'image/jpeg',
     crs: L.CRS.EPSG4326,
     //srs: 'EPSG:4326'
   }).addTo(map);
+*/
 
 // open street map layer
-//  L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-//    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-//  }).addTo(map);
+  L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
 
   var markers = new L.MarkerClusterGroup({
     showCoverageOnHover: false,
