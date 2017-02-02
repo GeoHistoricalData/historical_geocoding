@@ -115,9 +115,9 @@ RETURNS table(rank int,
 				, COALESCE(rl.specific_spatial_precision, def_spatial_precision) AS spatial_precision
 				, least( abs(sqrt(st_area(geom))  - lower($3)),abs(sqrt(st_area(geom)) - upper($3))) AS scale_distance
 				, COALESCE(ST_Distance($4::geometry, rl.geom),0) AS spatial_distance
-				, postal_parse($1) as parsed_iadress
-				, postal_parse(normalised_name) as parsed_adress
-				, historical_geocoding.number_distance(parsed_iadress->>''house_number'', parsed_adress->>''house_number'') as number_distance
+				, historical_geocoding.extract_building_number($1) AS house_number_i
+				, historical_geocoding.extract_building_number(normalised_name) AS house_number_h
+				, historical_geocoding.number_distance(house_number_i::text, house_number_h::text) as number_distance
 				, CAST ( %3$s AS float) AS aggregated_score
 				
 			WHERE 

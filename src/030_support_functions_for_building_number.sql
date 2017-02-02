@@ -1,4 +1,4 @@
---------------------------------
+﻿--------------------------------
 -- Rmi Cura, 2016
 -- projet geohistorical data
 -- 
@@ -55,8 +55,24 @@
 	FROM historical_geocoding.normaliser_numerotation('-48s') ;
 
 	
-
-
+DROP FUNCTION IF EXISTS historical_geocoding.extract_building_number(adress text) ;
+	CREATE OR REPLACE FUNCTION historical_geocoding.extract_building_number(adress text, OUT base_building_number int) AS 
+	$$
+		-- try to extract building number from adress, where the building number is at the beginning of the adresse, potentially starting with space or other spearator
+		-- '/[^a-zA-Z0-9.]*([0-9]*)[^0-9]*.*'
+	DECLARE
+	BEGIN 
+		SELECT CASE WHEN ar[1]='' THEN NULL ELSE ar[1] END INTO base_building_number 
+		FROM regexp_matches(adress, '[^a-zA-Z0-9.]*([0-9]*)[^0-9]*.*') AS ar; 
+		RETURN ;
+	END;
+	$$
+	LANGUAGE 'plpgsql' IMMUTABLE STRICT ; 
+/*
+	SELECT historical_geocoding.extract_building_number(adress)
+	FROM  CAST('rue du temple, Paris 75014' AS text) AS adress
+		, regexp_matches(adress, '[^a-zA-Z0-9.]*([0-9]*)[^0-9]*.*')  AS ar
+*/
 	
 	-- creation d'une table de suffixe autoris et de leur poid relatif, pour l'ordonnancement 
 	DROP TABLE IF EXISTS historical_geocoding.ordonnancement_suffixe ; 
