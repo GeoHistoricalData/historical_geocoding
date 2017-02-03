@@ -157,7 +157,7 @@ function round(value, exp) {//found on internet
       url: base_path+"?"+dataString,//+"&callback=?",
       dataType: 'JSONP',
       success: function(data){
-        alert("sucessfully wrote ruid");
+        //alert("sucessfully wrote ruid");
         console.log(data);
         geocoding.ruid = data["ruid"];
       },
@@ -177,8 +177,8 @@ function round(value, exp) {//found on internet
           maxFeatures:100,
           pointToLayer: function (featureData, latlng) {
             //this function is never called!  
-            /*alert("titi");
-            console.log("titi",featureData);
+            alert("trigger access to WFST: pointToLayer");
+            /*console.log("titi",featureData);
             var marker = createEditableMarker(latlng,{
               dontShowToolbarOnFirstClick: false
             });
@@ -190,8 +190,8 @@ function round(value, exp) {//found on internet
           },
           onEachFeature: function (feature, layer) {
             // this function is never called
-            /*alert("toto");
-            marker.setIcon(marker.options.editModeIcon);
+            alert("trigger access to WFST : onEachFeature");
+            /*marker.setIcon(marker.options.editModeIcon);
             marker.showLabel();
             marker.bindLabel();
             */
@@ -325,6 +325,8 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     console.log("adding a wfst marker, end of function",marker);
     marker2 = createEditableMarker(marker.latlng, marker.options);
     marker2.feature = marker.feature ; 
+    marker2.setLatLng(marker.getLatLng());
+    marker2.setIcon(marker2.options.editModeIcon);
     marker2.setIcon(marker2.options.editModeIcon);
     //display label
     //marker2.updateLabelContent(marker2.getLabelContent());
@@ -362,8 +364,10 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     marker = marker2 ; 
 
     console.log("adding a wfst marker, end of function2",marker);
-    marker2 = createEditableMarker(marker.latlng, marker.options);
+
     marker.on('marker:edited', function () {
+      //this function is called when existing the edit mode of a marker by clicking on marker edit  button
+      console.log("marker:edited",this);
       wfst.editLayer(marker);
     });
 
@@ -396,6 +400,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
           if (!loadFinished) {
             return;
           }
+          console.log("when edit is taking place",this);
 
           var newMarker = createEditableMarker(map.getCenter(), {
             dontShowToolbarOnFirstClick: false
