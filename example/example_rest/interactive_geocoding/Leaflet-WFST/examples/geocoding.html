@@ -318,6 +318,14 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     }
   });
  */
+  var getLabelContent= function (mark) {
+        var content = mark.feature.properties.normalised_name + '<br>'
+        content += mark.feature.properties.historical_source+ '<br>';
+        content += 'tot:'+round(parseFloat(mark.feature.properties.aggregated_distance),2) ; 
+        content += '  sem:'+round(parseFloat(mark.feature.properties.semantic_distance),2) ; 
+        content += '  t:'+round(parseFloat(mark.feature.properties.temporal_distance),0) ; 
+        return content;
+      };
 
 
   var addWfstMarker = function (marker) {
@@ -332,15 +340,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     marker2.options.title="test title";
     marker2.setLabelNoHide(true);
     marker2.showLabel();
-    marker2.getLabelContent= function () {
-        var content = marker2.feature.properties.normalised_name + '<br>'
-        content += marker2.feature.properties.historical_source+ '<br>';
-        content += 'tot:'+round(parseFloat(marker2.feature.properties.aggregated_distance),2) ; 
-        content += '  sem:'+round(parseFloat(marker2.feature.properties.semantic_distance),2) ; 
-        content += '  t:'+round(parseFloat(marker2.feature.properties.temporal_distance),0) ; 
-        return content;
-      };
-    marker2.bindLabel(marker2.getLabelContent(), {
+    marker2.bindLabel(getLabelContent(marker2) ,{
               noHide: true,
               direction: 'auto',
               pane: map.getPanes.popupPane
