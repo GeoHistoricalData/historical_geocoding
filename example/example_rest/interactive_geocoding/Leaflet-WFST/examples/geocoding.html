@@ -83,6 +83,27 @@
 <script src="./geocoding_form.js"></script>
 <script>
  // Note : spinner is an annimation that plays while loading
+
+function round(value, exp) {//found on internet
+  if (typeof exp === 'undefined' || +exp === 0)
+    return Math.round(value);
+
+  value = +value;
+  exp = +exp;
+
+  if (isNaN(value) || !(typeof exp === 'number' && exp % 1 === 0))
+    return NaN;
+
+  // Shift
+  value = value.toString().split('e');
+  value = Math.round(+(value[0] + 'e' + (value[1] ? (+value[1] + exp) : exp)));
+
+  // Shift back
+  value = value.toString().split('e');
+  return +(value[0] + 'e' + (value[1] ? (+value[1] - exp) : -exp));
+};
+
+
   var geocoding = {
     ruid: "c602fb0264056e0d6200ee85c93d6e53",
     ruid_short: function() {return String(this.ruid).substring(0,12);}
@@ -155,9 +176,25 @@
           geometryField: 'geom',
           maxFeatures:100,
           pointToLayer: function (featureData, latlng) {
-            return createEditableMarker(latlng,{
+            //this function is never called!  
+            /*alert("titi");
+            console.log("titi",featureData);
+            var marker = createEditableMarker(latlng,{
               dontShowToolbarOnFirstClick: false
             });
+            marker.setIcon(marker.options.editModeIcon);
+            marker.showLabel();
+            marker.bindLabel();
+            return marker;
+            */
+          },
+          onEachFeature: function (feature, layer) {
+            // this function is never called
+            /*alert("toto");
+            marker.setIcon(marker.options.editModeIcon);
+            marker.showLabel();
+            marker.bindLabel();
+            */
           },
           filter: new L.Filter.EQ().append('ruid',geocoding.ruid_short()) 
         });
@@ -166,14 +203,19 @@
           spinner.stop();
           enableMapInteractions();
           markers.clearLayers(); 
+
           e.target.eachLayer(function (layer) {
-              addWfstMarker(layer);
+            console.log("loading",layer);
+            addWfstMarker(layer);
+              
           });
           if (isFirstLoad) {
             isFirstLoad = false;
           }
           loadFinished = true;
-           map.fitBounds(markers);
+          map.fitBounds(markers);
+          //changing the style of wfst markers to be editable by default
+          console.log("end of loading",markers);
         });
 
         wfst.on('save:success', function (data) {
@@ -238,6 +280,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
   });
 
   var createEditableMarker = function (latlng, options) {
+    console.log("creaditng editable marker", latlng, options);
     var marker = new L.MarkerClusterGroup.EditableMarker(latlng || map.getCenter(), L.extend({
       clusterGroup: markers,
       editModeIcon: editModeMarkerIcon,
@@ -278,6 +321,48 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
 
 
   var addWfstMarker = function (marker) {
+
+    console.log("adding a wfst marker, end of function",marker);
+    marker2 = createEditableMarker(marker.latlng, marker.options);
+    marker2.feature = marker.feature ; 
+    marker2.setIcon(marker2.options.editModeIcon);
+    //display label
+    //marker2.updateLabelContent(marker2.getLabelContent());
+    marker2.options.title="test title";
+    marker2.setLabelNoHide(true);
+    /*marker2.bindLabel(getLabelContent(), {
+              noHide: true,
+              direction: 'auto',
+              pane: map.getPanes.popupPane
+            });
+    marker2.showLabel();
+    */
+    marker2.getLabelContent= function () {
+        var content = marker2.feature.properties.normalised_name + '<br>'
+        content += marker2.feature.properties.historical_source+ '<br>';
+        content += 'tot:'+round(parseFloat(marker2.feature.properties.aggregated_distance),2) ; 
+        content += '  sem:'+round(parseFloat(marker2.feature.properties.semantic_distance),2) ; 
+        content += '  t:'+round(parseFloat(marker2.feature.properties.temporal_distance),0) ; 
+        /*
+
+        /*
+        /*
+        var content = 'It should be displayed permanently.<br>' +
+          '<b>Latitude:</b> ' + latlng.lat.toFixed(6) + '<br>' +
+          '<b>Longitude:</b> ' + latlng.lng.toFixed(6);
+        */
+        return content;
+      };
+    marker2.bindLabel(marker2.getLabelContent(), {
+              noHide: true,
+              direction: 'auto',
+              pane: map.getPanes.popupPane
+            });
+    //marker2.bindLabel("my super label");
+    marker = marker2 ; 
+
+    console.log("adding a wfst marker, end of function2",marker);
+    marker2 = createEditableMarker(marker.latlng, marker.options);
     marker.on('marker:edited', function () {
       wfst.editLayer(marker);
     });
@@ -293,7 +378,9 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     if (!wfst.hasLayer(marker)) {
       wfst.addLayer(marker);
     }
-    marker.setIcon(marker.options.editModeIcon);
+    marker.showLabel();
+    return marker;
+     
   };
 
   new L.Toolbar.Control({
