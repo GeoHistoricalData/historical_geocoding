@@ -329,30 +329,15 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     marker2.setIcon(marker2.options.editModeIcon);
     marker2.setIcon(marker2.options.editModeIcon);
     //display label
-    //marker2.updateLabelContent(marker2.getLabelContent());
     marker2.options.title="test title";
     marker2.setLabelNoHide(true);
-    /*marker2.bindLabel(getLabelContent(), {
-              noHide: true,
-              direction: 'auto',
-              pane: map.getPanes.popupPane
-            });
     marker2.showLabel();
-    */
     marker2.getLabelContent= function () {
         var content = marker2.feature.properties.normalised_name + '<br>'
         content += marker2.feature.properties.historical_source+ '<br>';
         content += 'tot:'+round(parseFloat(marker2.feature.properties.aggregated_distance),2) ; 
         content += '  sem:'+round(parseFloat(marker2.feature.properties.semantic_distance),2) ; 
         content += '  t:'+round(parseFloat(marker2.feature.properties.temporal_distance),0) ; 
-        /*
-
-        /*
-        /*
-        var content = 'It should be displayed permanently.<br>' +
-          '<b>Latitude:</b> ' + latlng.lat.toFixed(6) + '<br>' +
-          '<b>Longitude:</b> ' + latlng.lng.toFixed(6);
-        */
         return content;
       };
     marker2.bindLabel(marker2.getLabelContent(), {
@@ -360,9 +345,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
               direction: 'auto',
               pane: map.getPanes.popupPane
             });
-    //marker2.bindLabel("my super label");
     marker = marker2 ; 
-
     console.log("adding a wfst marker, end of function2",marker);
 
     marker.on('marker:edited', function () {
