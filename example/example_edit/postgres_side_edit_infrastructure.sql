@@ -50,6 +50,8 @@ FROM historical_geocoding.geocode_name_foolproof(
 		, optional_max_spatial_distance := 10000
 ) AS  f, geocoding_edit.make_ruid()as ruid1, geocoding_edit.make_ruid()as ruid2  ; 
 
+
+-- TRUNCATE geocoding_edit.geocoding_results ;
 SELECT *
 FROM geocoding_edit.geocoding_results ;
 
@@ -58,7 +60,7 @@ FROM geocoding_edit.geocoding_results ;
 TRUNCATE geocoding_edit.geocoding_results_v ; 
 DROP VIEW IF EXISTS geocoding_edit.geocoding_results_v ;  
 CREATE VIEW geocoding_edit.geocoding_results_v AS 
-SELECT gid, rank, historical_name, normalised_name
+SELECT gid AS gidg, gid, rank, historical_name, normalised_name
 	,   geom
 	, historical_source, numerical_origin_process
 	,semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance
@@ -104,7 +106,8 @@ $$
 		, NEW.historical_source, NEW.numerical_origin_process
 		,NEW.semantic_distance,  NEW.temporal_distance, NEW.number_distance, NEW.scale_distance,NEW.spatial_distance
 		, NEW.aggregated_distance, NEW.spatial_precision, NEW.confidence_in_result, substring(NEW.ruid,1,12)  ) 
-		WHERE gr.gid = NEW.gid AND gr.ruid = substring(NEW.ruid,1,12) ;   
+		WHERE gr.gid = NEW.gid
+			AND gr.ruid = substring(NEW.ruid,1,12) ;   
 		RETURN NEW;
         END IF ; 
         IF TG_OP = 'INSERT' THEN 
@@ -133,9 +136,12 @@ CREATE TRIGGER geocoding_results_sync AFTER UPDATE OR INSERT OR DELETE ON geocod
 DROP FUNCTION IF EXISTS geocoding_edit.geocoding_results_edit_check() CASCADE;
 CREATE OR REPLACE FUNCTION geocoding_edit.geocoding_results_edit_check() RETURNS trigger AS 
 $$
+   DECLARE 
+	affected_row_nb int := 0 ; 
     BEGIN
+	
 	-- only workingon update. No inserting allowed, no deleting allowed
-	IF TG_OP = 'UPDATE' THEN 
+	IF TG_OP = 'UPDATE' OR TG_OP = 'INSERT' THEN 
 	 
 		UPDATE  geocoding_edit.geocoding_results AS gr SET (historical_name, normalised_name
 	,   geom
@@ -146,9 +152,14 @@ $$
 	, NEW.historical_source, NEW.numerical_origin_process
 	,NEW.semantic_distance,  NEW.temporal_distance, NEW.number_distance, NEW.scale_distance,NEW.spatial_distance
 	, NEW.aggregated_distance, NEW.spatial_precision, NEW.confidence_in_result  ) 
-	WHERE gr.gid = NEW.gid AND gr.ruid = NEW.ruid ;   
-        RETURN NEW;
-        ELSE  
+	WHERE gr.gid = NEW.gidg 
+		AND gr.ruid = NEW.ruid     --this is the security to prevent a user to change other users stuff  
+        ;
+		GET DIAGNOSTICS affected_row_nb := ROW_COUNT;
+		RAISE NOTICE 'affected_row : %', affected_row_nb;
+		RETURN NEW;
+        ELSE
+		RAISE WARNING 'TG_OP: % , input : % ', TG_OP,OLD; 
 		RETURN OLD ;
         END IF ;
     END;
@@ -160,7 +171,7 @@ CREATE TRIGGER geocoding_results_edit_check INSTEAD OF UPDATE OR INSERT OR DELET
 -- testing
 SELECT *, st_astext(geom)
 FROM geocoding_edit.geocoding_results
-WHERE gid = 1 ;  
+WHERE ruid ILIKE 'fa60f3f4251a%' ;  
 
 UPDATE geocoding_edit.geocoding_results_v SET (geom, ruid) = (ST_Translate(geom,0.0001,0.0001),'205d59b51ebc1935c209ca395361183c') 
 WHERE gid=1 ; 
@@ -168,8 +179,30 @@ WHERE gid=1 ;
 DELETE FROM geocoding_edit.geocoding_results_v  
 WHERE gid=1 ; 
 
+WITH to_be_updated AS (
+	SELECT *
+	FROM geocoding_edit.geocoding_results_v  
+	WHERE ruid ILIKE 'fa60f3f4251a%'
+	LIMIT 1
+)
+INSERT INTO geocoding_edit.geocoding_results_v  
+SELECT * FROM to_be_updated;  
 
 
+INSERT INTO "geocoding_edit"."geocoding_results_v" ( "gidg","rank","historical_name","normalised_name","geom","historical_source","numerical_origin_process","semantic_distance","temporal_distance","number_distance","scale_distance","spatial_distance","aggregated_distance","spatial_precision","confidence_in_result","ruid","gid" ) 
+	VALUES ( 347,1,'12 rue du temple','12 rue du temple , Paris',ST_GeomFromText('POINT (2.3525655269622803 48.858835228314476)', 4326),'poubelle_municipal_paris','poubelle_paris_number',0.0,28.0,0.0,0.0,0.0,3.14999,3.5,1.0,'fbc92eda4214e14ee5e578608172d101',348)
+
+
+SELECT st_astext(geom), *
+FROM geocoding_edit.geocoding_results_v  
+WHERE ruid ILIKE '96f7db5a1a%'; 
+POINT(2.35236704349518 48.8584575876129)
+POINT(2.35258162021637 48.8586128794613)
+POINT(2.35095620155334 48.8588634630188)
+POINT(2.36304759979248 48.8516701573163)
+
+ 
+/*
 
 DROP TABLE IF EXISTS geocoding_edit.geocoding_results_proxy ; 
 CREATE TABLE IF NOT EXISTS geocoding_edit.geocoding_results_proxy (
