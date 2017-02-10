@@ -285,7 +285,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
       },
       hideToolbarAfterEdit: false,
       nohide: true,
-      dontShowToolbarOnFirstClick: true 
+      dontShowToolbarOnFirstClick: false
     }, options || {}));
     marker.showLabel();
     return marker;
@@ -319,11 +319,12 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
   var addWfstMarker = function (marker) {
 
     console.log("adding a wfst marker, end of function",marker);
+    
     marker2 = createEditableMarker(marker.latlng, marker.options);
-    //marker2 = marker ; 
     marker2.feature = marker.feature ; 
     marker2.setLatLng(marker.getLatLng());
     marker2.state = marker.state ;
+    //marker2._leaflet_id = marker._leaflet_id ; 
     //marker2.setIcon(marker2.options.editModeIcon);
     //display label
     marker2.options.title="test title";
@@ -334,30 +335,45 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
               direction: 'auto',
               pane: map.getPanes.popupPane
             });
-    marker = marker2 ; 
-    
-    console.log("adding a wfst marker, end of function2",marker);
+    //markers.removeLayer(marker);
+    //map.removeLayer(marker);
+    //marker.remove();
+    wfst.removeLayer(marker) ; 
+    markers.removeLayer(marker._leaflet_id);
+    map.removeLayer(marker._leaflet_id);
+    delete marker;
+    /*    
+    marker2.dontShowToolbarOnFirstClick = false ; 
+    marker2.setLabelNoHide(true);    
+    marker2.bindLabel(getLabelContent(marker) ,{
+              noHide: true,
+              direction: 'auto',
+              pane: map.getPanes.popupPane
+            });
+    */
+    console.log("adding a wfst marker, end of function2",marker2);
 
-    marker.on('marker:edited', function () {
+    marker2.on('marker:edited', function () {
       //this function is called when existing the edit mode of a marker by clicking on marker edit  button
-      marker.feature.properties.ruid = geocoding.ruid ; 
-      console.log("marker:edited",this);
-      wfst.editLayer(marker);
+      marker2.feature.properties.ruid = geocoding.ruid ; 
+      console.log("marker:edited",marker2);
+      wfst.editLayer(marker2);
+      marker2.showLabel();
     });
 
-    marker.on('marker:deleted', function () {
-      wfst.removeLayer(marker);
+    marker2.on('marker:deleted', function () {
+      wfst.removeLayer(marker2);
     });
     
-    if (!markers.hasLayer(marker)) {
-      markers.addLayer(marker);
+    if (!markers.hasLayer(marker2)) {
+      markers.addLayer(marker2);
     }
 
-    if (!wfst.hasLayer(marker)) {
-      wfst.addLayer(marker);
+    if (!wfst.hasLayer(marker2)) {
+      wfst.addLayer(marker2);
     }
-    marker.showLabel();
-    return marker;
+    marker2.showLabel();
+    return marker2;
      
   };
 
@@ -453,6 +469,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
           loadFinished = false;
           disableMapInteractions();
           spinner.spin(spinnerContainer);
+          isFirstLoad = true ; 
           console.log("just before save: ", wfst) ; 
           wfst.save();
           console.log("just after save: ", wfst) ; 
