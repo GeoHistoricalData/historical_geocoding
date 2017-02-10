@@ -21,3 +21,6 @@ LIMIT 100;
 SELECT *
 FROM export_all_paris_road_name2
 LIMIT 100;
+
+
+COPY export_all_paris_road_name2 TO '/tmp/export_paris_road.csv'
