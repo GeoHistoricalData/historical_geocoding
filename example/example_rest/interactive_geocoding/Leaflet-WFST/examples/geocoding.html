@@ -178,23 +178,10 @@ function round(value, exp) {//found on internet
           pointToLayer: function (featureData, latlng) {
             //this function is never called!  
             alert("trigger access to WFST: pointToLayer");
-            /*console.log("titi",featureData);
-            var marker = createEditableMarker(latlng,{
-              dontShowToolbarOnFirstClick: false
-            });
-            marker.setIcon(marker.options.editModeIcon);
-            marker.showLabel();
-            marker.bindLabel();
-            return marker;
-            */
           },
           onEachFeature: function (feature, layer) {
             // this function is never called
             alert("trigger access to WFST : onEachFeature");
-            /*marker.setIcon(marker.options.editModeIcon);
-            marker.showLabel();
-            marker.bindLabel();
-            */
           },
           filter: new L.Filter.EQ().append('ruid',geocoding.ruid_short()) 
         });
@@ -297,8 +284,8 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
         return content;
       },
       hideToolbarAfterEdit: false,
-      nohide: true
-      
+      nohide: true,
+      dontShowToolbarOnFirstClick: true 
     }, options || {}));
     marker.showLabel();
     return marker;
@@ -333,8 +320,10 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
 
     console.log("adding a wfst marker, end of function",marker);
     marker2 = createEditableMarker(marker.latlng, marker.options);
+    //marker2 = marker ; 
     marker2.feature = marker.feature ; 
     marker2.setLatLng(marker.getLatLng());
+    marker2.state = marker.state ;
     //marker2.setIcon(marker2.options.editModeIcon);
     //display label
     marker2.options.title="test title";
@@ -346,6 +335,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
               pane: map.getPanes.popupPane
             });
     marker = marker2 ; 
+    
     console.log("adding a wfst marker, end of function2",marker);
 
     marker.on('marker:edited', function () {
