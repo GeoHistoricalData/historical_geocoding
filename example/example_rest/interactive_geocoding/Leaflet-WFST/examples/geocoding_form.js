@@ -25,6 +25,7 @@
       }
 
       sidebar._onApplyBtnClick = function () {
+        console.log("clicking on apply button");
         if (!sidebar._marker) {
           return;
         }
@@ -41,22 +42,27 @@
         };
 
         sidebar._marker.setProperties({
+          ruid: geocoding.ruid,
           historical_name:  document.getElementById('hname').value || null,
           normalised_name:  document.getElementById('nname').value || null,
           //fuzzy_date:  document.getElementById('fdate').value || null,//@FIXME  
         })
+        propertiesChanged = true;
 
         if (propertiesChanged) {
           sidebar._marker.fire('marker:edited');
         }
       };
 
-//      var applyBtn = document.getElementById('applyButton');
-//      L.DomEvent.on(applyBtn, 'click', sidebar._onApplyBtnClick);
+      var applyBtn = document.getElementById('applyButton');
+      L.DomEvent.on(applyBtn, 'click', sidebar._onApplyBtnClick);
     }
     console.log("showing the sidebar");
     sidebar_adress.hide();
+    //document.getElementById("applyButton").disabled = false;
     sidebar.show();
+    sidebar._marker.hideLabel();
+    sidebar._marker.showLabel();
   };
   
   
@@ -68,9 +74,9 @@
 
     var applyBtn = document.getElementById('applyButton');
 
-//    if (sidebar._onApplyBtnClick) {
-//      L.DomEvent.off(applyBtn, 'click', sidebar._onApplyBtnClick);
-//    }
+    if (sidebar._onApplyBtnClick) {
+      L.DomEvent.off(applyBtn, 'click', sidebar._onApplyBtnClick);
+    }
 
     sidebar._marker = undefined;
     sidebar._onApplyBtnClick = undefined;
@@ -78,9 +84,10 @@
     sidebar.hide();
   };
 
-//  L.DomEvent.on(sidebar.getCloseButton(), 'click', function () {
-//    hideSidebar();
-//  });
+  L.DomEvent.on(sidebar.getCloseButton(), 'click', function () {
+    //document.getElementById("applyButton").disabled = true;
+    hideSidebar();
+  });
 
 
 /*

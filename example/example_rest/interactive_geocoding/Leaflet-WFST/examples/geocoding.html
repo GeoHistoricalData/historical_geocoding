@@ -79,6 +79,8 @@
   
   <input id="ndist" type="number" style="width: 3em" name="ndist" readonly="readonly" />
   <label id="ndistLabel" name="ndist">Building number distance</label><br>
+  
+  <input id="applyButton" type="button" value="Apply" disabled/>
    
 </div>
 
@@ -379,9 +381,11 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     
     marker2.on('popuptoolbar:shown', function () {
       showSidebar(marker2);
+      document.getElementById("applyButton").disabled = false;
     });
 
     marker2.on('popuptoolbar:closed', function () {
+      document.getElementById("applyButton").disabled = true;
       hideSidebar();
     });
 
