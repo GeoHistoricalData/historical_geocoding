@@ -47,37 +47,37 @@
 
 <div id="sidebar">
   <h1 id="title">Geocoding point properties</h1>
-  <input id="hname" type="text" size="100" name="historical_name"/>
+  <input id="hname" type="text" size="40" name="historical_name"/>
   <label id="hnameLabel" name="historical_name">historical name</label><br>
   
-  <input id="nname" type="text" size="100" name="normalized_name"/>
+  <input id="nname" type="text" size="40" name="normalized_name"/>
   <label id="nnameLabel" name="normalized_name">normalized name</label><br> 
   
-  <input id="fdate" type="date" name="fuzzy_date" readonly="readonly" />
+  <input id="fdate" type="date" size="6" name="fuzzy_date" readonly="readonly" />
   <label id="fdateLabel" name="fuzzy_date">fuzzy date</label><br>
   
-  <input id="hsource" type="text" size="100" name="hsource"/>
+  <input id="hsource" type="text" size="20" name="hsource"/>
   <label id="hsourceLabel" name="hsource">Historical source</label><br>
   
-  <input id="nsource" type="text" size="100" name="nsource" readonly="readonly"/>
+  <input id="nsource" type="text" size="20" name="nsource" readonly="readonly"/>
   <label id="nsourceLabel" name="nsource">Numerical origin process</label><br>
     
-  <input id="adist" type="number" name="adist" readonly="readonly" />
+  <input id="adist" type="number" style="width: 3em" name="adist" readonly="readonly" />
   <label id="adistLabel" name="adist">Aggregated distance</label><br>
   
-  <input id="sprecision" type="number" name="sprecision" readonly="readonly" />
+  <input id="sprecision" type="number" style="width: 3em" name="sprecision" readonly="readonly" />
   <label id="sprecisionLabel" name="sprecision">Spatial precision (m)</label><br>
   
-  <input id="cresult" type="number" name="cresult" readonly="readonly" />
+  <input id="cresult" type="number" style="width: 3em" name="cresult" readonly="readonly" />
   <label id="cresultLabel" name="cresult">Confidence in result</label><br>
   
-  <input id="sdist" type="number" name="sdist" readonly="readonly" />
+  <input id="sdist" type="number" style="width: 3em" name="sdist" readonly="readonly" />
   <label id="sdistLabel" name="sdist">Semantic distance</label><br>
   
-  <input id="tdist" type="number" name="tdist" readonly="readonly" />
+  <input id="tdist" type="number" style="width: 3em" name="tdist" readonly="readonly" />
   <label id="tdistLabel" name="tdist">Temporal distance</label><br>
   
-  <input id="ndist" type="number" name="ndist" readonly="readonly" />
+  <input id="ndist" type="number" style="width: 3em" name="ndist" readonly="readonly" />
   <label id="ndistLabel" name="ndist">Building number distance</label><br>
    
 </div>
@@ -150,8 +150,15 @@ function round(value, exp) {//found on internet
   disableMapInteractions();
 
   var sidebar_adress = L.control.sidebar('sidebar_adress',{
+    closeButton: true,
     position: 'right'
   });
+  var sidebar = L.control.sidebar('sidebar', {
+    closeButton: true,
+    autoPan: false, 
+    position: 'right'
+  });
+  map.addControl(sidebar);
  
   sidebar_adress._onBtnClick = function () {
     // function called when clicking on the button of the adress sidebar
@@ -353,6 +360,11 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
     map.removeLayer(marker._leaflet_id);
     delete marker; 
     console.log("adding a wfst marker, end of function2",marker2); 
+    /*marker2.on('popuptoolbar:shown', function () {
+      console.log("popuptoolbar:shown",marker2);
+      sidebar.show();
+    });
+    */
     marker2.on('marker:edited', function () {
       //this function is called when existing the edit mode of a marker by clicking on marker edit  button
       marker2.feature.properties.ruid = geocoding.ruid ; 
@@ -365,6 +377,14 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
       wfst.removeLayer(marker2);
     });
     
+    marker2.on('popuptoolbar:shown', function () {
+      showSidebar(marker2);
+    });
+
+    marker2.on('popuptoolbar:closed', function () {
+      hideSidebar();
+    });
+
     if (!markers.hasLayer(marker2)) {
       markers.addLayer(marker2);
     }

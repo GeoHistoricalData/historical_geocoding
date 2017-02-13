@@ -8,7 +8,6 @@
     sidebar._marker = marker;
 
     if (sidebar._marker.feature) {
-      document.getElementById('idTextbox').value = sidebar._marker.feature.id || '';
 
       if (sidebar._marker.feature.properties) { //filling the form with values
         document.getElementById('hname').value = sidebar._marker.getProperty('historical_name') || '';
@@ -52,10 +51,11 @@
         }
       };
 
-      var applyBtn = document.getElementById('applyButton');
-      L.DomEvent.on(applyBtn, 'click', sidebar._onApplyBtnClick);
+//      var applyBtn = document.getElementById('applyButton');
+//      L.DomEvent.on(applyBtn, 'click', sidebar._onApplyBtnClick);
     }
-
+    console.log("showing the sidebar");
+    sidebar_adress.hide();
     sidebar.show();
   };
   
@@ -68,21 +68,22 @@
 
     var applyBtn = document.getElementById('applyButton');
 
-    if (sidebar._onApplyBtnClick) {
-      L.DomEvent.off(applyBtn, 'click', sidebar._onApplyBtnClick);
-    }
+//    if (sidebar._onApplyBtnClick) {
+//      L.DomEvent.off(applyBtn, 'click', sidebar._onApplyBtnClick);
+//    }
 
     sidebar._marker = undefined;
     sidebar._onApplyBtnClick = undefined;
+    sidebar_adress.show();
     sidebar.hide();
   };
 
-  L.DomEvent.on(sidebar.getCloseButton(), 'click', function () {
-    hideSidebar();
-  });
+//  L.DomEvent.on(sidebar.getCloseButton(), 'click', function () {
+//    hideSidebar();
+//  });
 
 
-
+/*
     marker.on('popuptoolbar:shown', function () {
       showSidebar(marker);
     });
@@ -90,3 +91,4 @@
     marker.on('popuptoolbar:closed', function () {
       hideSidebar();
     });
+*/
