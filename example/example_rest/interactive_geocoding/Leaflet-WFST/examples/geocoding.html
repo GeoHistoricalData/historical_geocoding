@@ -45,30 +45,43 @@
   </form>
 </div>
 
-<!--<div id="sidebar">
-  <h1 id="title">Point of interests properties</h1>
-  <input id="idTextbox" type="text" size="35" name="id" readonly="readonly"/>
-  <label id="idLabel" name="id">ID</label><br>
-  <input id="osmidTextbox" type="text" size="35" name="osmid" readonly="readonly"/>
-  <label id="osmidLabel" name="osmid">OSM ID</label><br>
-  <input id="manmadeTextbox" type="text" size="35" name="manmade"/>
-  <label id="manmadeLabel" name="manmade">Man made</label><br>
-  <input id="nameTextbox" type="text" size="35" name="name"/>
-  <label id="nameLabel" name="name">Name</label><br>
-  <input id="amenityTextbox" type="text" size="35" name="amenity"/>
-  <label id="amenityLabel" name="amenity">Amenity</label><br>
-  <input id="leisureTextbox" type="text" size="35" name="leisure"/>
-  <label id="leisureLabel" name="leisure">Leisure</label><br>
-  <input id="officeTextbox" type="text" size="35" name="office"/>
-  <label id="officeLabel" name="office">Office</label><br>
-  <input id="shopTextbox" type="text" size="35" name="shop"/>
-  <label id="shopLabel" name="shop">Shop</label><br>
-  <input id="sportTextbox" type="text" size="35" name="sport"/>
-  <label id="sportLabel" name="sport">Sport</label><br>
-  <input id="tourismTextbox" type="text" size="35" name="tourism"/>
-  <label id="tourismLabel" name="tourism">Tourism</label><br>
-  <input id="applyButton" type="button" value="Apply" enabled/>
-</div>-->
+<div id="sidebar">
+  <h1 id="title">Geocoding point properties</h1>
+  <input id="hname" type="text" size="100" name="historical_name"/>
+  <label id="hnameLabel" name="historical_name">historical name</label><br>
+  
+  <input id="nname" type="text" size="100" name="normalized_name"/>
+  <label id="nnameLabel" name="normalized_name">normalized name</label><br> 
+  
+  <input id="fdate" type="date" name="fuzzy_date" readonly="readonly" />
+  <label id="fdateLabel" name="fuzzy_date">fuzzy date</label><br>
+  
+  <input id="hsource" type="text" size="100" name="hsource"/>
+  <label id="hsourceLabel" name="hsource">Historical source</label><br>
+  
+  <input id="nsource" type="text" size="100" name="nsource" readonly="readonly"/>
+  <label id="nsourceLabel" name="nsource">Numerical origin process</label><br>
+    
+  <input id="adist" type="number" name="adist" readonly="readonly" />
+  <label id="adistLabel" name="adist">Aggregated distance</label><br>
+  
+  <input id="sprecision" type="number" name="sprecision" readonly="readonly" />
+  <label id="sprecisionLabel" name="sprecision">Spatial precision (m)</label><br>
+  
+  <input id="cresult" type="number" name="cresult" readonly="readonly" />
+  <label id="cresultLabel" name="cresult">Confidence in result</label><br>
+  
+  <input id="sdist" type="number" name="sdist" readonly="readonly" />
+  <label id="sdistLabel" name="sdist">Semantic distance</label><br>
+  
+  <input id="tdist" type="number" name="tdist" readonly="readonly" />
+  <label id="tdistLabel" name="tdist">Temporal distance</label><br>
+  
+  <input id="ndist" type="number" name="ndist" readonly="readonly" />
+  <label id="ndistLabel" name="ndist">Building number distance</label><br>
+   
+</div>
+
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 <script src="lib/spin.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
@@ -230,10 +243,10 @@ function round(value, exp) {//found on internet
   L.DomEvent.on(geocodeBtn, 'click', sidebar_adress._onBtnClick);
   spinner.stop();
 
-//  var sidebar = L.control.sidebar('sidebar', {
-//    position: 'right'
-//  });
-//  map.addControl(sidebar);
+  var sidebar = L.control.sidebar('sidebar', {
+    position: 'right'
+  });
+  map.addControl(sidebar);
 
 /*
 L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
@@ -276,7 +289,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
       toolbarCloseIconClass: 'fa fa-lg fa-close',
       showLabelOnEdit: true,
       getLabelContent: function () {
-	var content = marker2.feature.properties.normalised_name + '<br>'
+        var content = marker2.feature.properties.normalised_name + '<br>'
         content += marker2.feature.properties.historical_source+ '<br>';
         content += 'tot:'+round(parseFloat(marker2.feature.properties.aggregated_distance),2) ; 
         content += '  sem:'+round(parseFloat(marker2.feature.properties.semantic_distance),2) ; 
@@ -334,25 +347,12 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
               noHide: true,
               direction: 'auto',
               pane: map.getPanes.popupPane
-            });
-    //markers.removeLayer(marker);
-    //map.removeLayer(marker);
-    //marker.remove();
+            }); 
     wfst.removeLayer(marker) ; 
     markers.removeLayer(marker._leaflet_id);
     map.removeLayer(marker._leaflet_id);
-    delete marker;
-    /*    
-    marker2.dontShowToolbarOnFirstClick = false ; 
-    marker2.setLabelNoHide(true);    
-    marker2.bindLabel(getLabelContent(marker) ,{
-              noHide: true,
-              direction: 'auto',
-              pane: map.getPanes.popupPane
-            });
-    */
-    console.log("adding a wfst marker, end of function2",marker2);
-
+    delete marker; 
+    console.log("adding a wfst marker, end of function2",marker2); 
     marker2.on('marker:edited', function () {
       //this function is called when existing the edit mode of a marker by clicking on marker edit  button
       marker2.feature.properties.ruid = geocoding.ruid ; 
@@ -380,6 +380,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
   new L.Toolbar.Control({
     position: 'topleft',
     actions: [
+    /*
       L.ToolbarAction.extend({
         options: {
           toolbarIcon: {
@@ -455,6 +456,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
           newMarker.once('click', finishAdding);
         }
       }),
+      */
       L.ToolbarAction.extend({
         options: {
           toolbarIcon: {
