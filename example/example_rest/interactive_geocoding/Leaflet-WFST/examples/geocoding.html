@@ -43,6 +43,12 @@
   <input type="checkbox" id="user_use_precise_localisation" name="user_use_precise_localisation" value="1" checked/> <br>
   <input id="geocodeButton" type="button" value="Geocode!" enabled/>
   </form>
+    <h2 id="title">(OPTIONAL) Editing already geocoded adresses</h2>
+  <form id="formoid2" action="formoid2" method="post" >
+  <label for="already provided ruid"> RUID :</label> 
+  <input type="textarea" id="user_provided_ruid" name="user_provided_ruid" placeholder="0" value="0" size="32"/> <br> 
+  <input id="geocodeButton2" type="button" value="Display already Geocoded adresses" enabled/>
+  </form>
 </div>
 
 <div id="sidebar">
@@ -163,6 +169,7 @@ function round(value, exp) {//found on internet
   map.addControl(sidebar);
  
   sidebar_adress._onBtnClick = function () {
+    console.log("sidebar button click",this);
     // function called when clicking on the button of the adress sidebar
     // should send the adresse parameter to the REST API and store result
     cleaned_user_adresse = document.getElementById('user_adresse').value ;
