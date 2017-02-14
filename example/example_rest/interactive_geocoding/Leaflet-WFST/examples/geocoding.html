@@ -243,8 +243,12 @@ function round(value, exp) {//found on internet
     cleaned_user_date = parseInt(document.getElementById('user_date').value) ; 
     cleaned_user_n_results = parseInt(document.getElementById('user_number_of_result').value) ;
     cleaned_user_use_precise_localisation = document.getElementById('user_use_precise_localisation').checked ;
+    interactive_editing = "1" ;
+    if (String(document.getElementById('user_provided_ruid').value).length == 32){
+    interactive_editing = document.getElementById('user_provided_ruid').value;
+    };
     var base_path = "https://www.geohistoricaldata.org/geocoding/geocoding.php"
-    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&output_for_interactive_editing='+"1");
+    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&output_for_interactive_editing='+interactive_editing);
 
     console.log(base_path+"?"+dataString+"&callback=?");    
 
