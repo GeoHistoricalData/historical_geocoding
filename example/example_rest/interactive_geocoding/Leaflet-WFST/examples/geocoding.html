@@ -53,6 +53,9 @@
 
 <div id="sidebar">
   <h1 id="title">Geocoding point properties</h1>
+  <input id="iquery" type="text" size="40" name="iquery" readonly="readonly"/>
+  <label id="iqueryLabel" name="iquery">User provided geocoding query</label><br>
+  
   <input id="hname" type="text" size="40" name="historical_name"/>
   <label id="hnameLabel" name="historical_name">historical name</label><br>
   
@@ -126,7 +129,7 @@ function round(value, exp) {//found on internet
 
 
   var geocoding = {
-    ruid: "c602fb0264056e0d6200ee85c93d6e53",
+    ruid: "0",
     ruid_short: function() {return String(this.ruid).substring(0,12);}
   };
   var map = L.map('map').setView([0, 0], 2);
@@ -177,7 +180,7 @@ function round(value, exp) {//found on internet
     cleaned_user_n_results = parseInt(document.getElementById('user_number_of_result').value) ;
     cleaned_user_use_precise_localisation = document.getElementById('user_use_precise_localisation').checked ;
     var base_path = "https://www.geohistoricaldata.org/geocoding/geocoding.php"
-    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&output_for_interactive_editing=1');
+    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&output_for_interactive_editing='+document.getElementById('user_provided_ruid').value);
 
     console.log(base_path+"?"+dataString+"&callback=?");    
 
@@ -189,14 +192,18 @@ function round(value, exp) {//found on internet
         //alert("sucessfully wrote ruid");
         console.log(data);
         geocoding.ruid = data["ruid"];
+        document.getElementById('user_provided_ruid').value = data["ruid"];
       },
       error: function(jqXHR, textStatus, errorThrown){
         //console.log('jqXHR',jqXHR);
         if(jqXHR.status==201){
           // we received the expected answer, writting new ruid, loading point from server 
           console.log(jqXHR); 
-          geocoding.ruid = JSON.parse(jqXHR.responseText)[0]["ruid"]; 
-            
+          
+         // if (document.getElementById('user_provided_ruid').value =="0" ){
+            geocoding.ruid = JSON.parse(jqXHR.responseText)[0]["ruid"]; 
+            document.getElementById('user_provided_ruid').value = geocoding.ruid; 
+          };
         wfst = new L.WFST({
           url: 'https://www.geohistoricaldata.org/geoserver/ows',
           typeNS: 'geocoding',

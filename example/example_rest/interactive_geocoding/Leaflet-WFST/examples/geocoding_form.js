@@ -10,9 +10,10 @@
     if (sidebar._marker.feature) {
 
       if (sidebar._marker.feature.properties) { //filling the form with values
+        document.getElementById('iquery').value = sidebar._marker.getProperty('input_adresse_query') || '';
         document.getElementById('hname').value = sidebar._marker.getProperty('historical_name') || '';
         document.getElementById('nname').value = sidebar._marker.getProperty('normalised_name') || ''; 
-        document.getElementById('fdate').value = 0 ; //sidebar._marker.getProperty('normalised_name') || ''; 
+        document.getElementById('fdate').value = sidebar._marker.getProperty('fuzzy_date') || ''; 
         // @FIXME @DEBUG @ERROR //missing value returned from database 
         document.getElementById('hsource').value = sidebar._marker.getProperty('historical_source') || '';
         document.getElementById('nsource').value = sidebar._marker.getProperty('numerical_origin_process') || '';
