@@ -45,7 +45,7 @@
   </form>
     <h2 id="title">(OPTIONAL) Editing already geocoded adresses</h2>
   <form id="formoid2" action="formoid2" method="post" >
-  <label for="already provided ruid"> RUID :</label> 
+  <label for="already provided ruid"> RUID : Permanent key to your geocoding results:</label> 
   <input type="textarea" id="user_provided_ruid" name="user_provided_ruid" placeholder="0" value="0" size="32"/> <br> 
   <input id="geocodeButton2" type="button" value="Display already Geocoded adresses" enabled/>
   </form>
@@ -244,7 +244,7 @@ function round(value, exp) {//found on internet
     cleaned_user_n_results = parseInt(document.getElementById('user_number_of_result').value) ;
     cleaned_user_use_precise_localisation = document.getElementById('user_use_precise_localisation').checked ;
     var base_path = "https://www.geohistoricaldata.org/geocoding/geocoding.php"
-    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&output_for_interactive_editing='+document.getElementById('user_provided_ruid').value);
+    var dataString = encodeURI('adresse='+cleaned_user_adresse+'&date='+cleaned_user_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&output_for_interactive_editing='+"1");
 
     console.log(base_path+"?"+dataString+"&callback=?");    
 
@@ -264,10 +264,8 @@ function round(value, exp) {//found on internet
           // we received the expected answer, writting new ruid, loading point from server 
           console.log(jqXHR); 
           
-         // if (document.getElementById('user_provided_ruid').value =="0" ){
             geocoding.ruid = JSON.parse(jqXHR.responseText)[0]["ruid"]; 
             document.getElementById('user_provided_ruid').value = geocoding.ruid; 
-          };
         
         addWFSTsource();
 
