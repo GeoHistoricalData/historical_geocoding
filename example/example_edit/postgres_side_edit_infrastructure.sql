@@ -73,17 +73,23 @@ SELECT *
 FROM geocoding_edit.geocoding_results_v  ; 
 
 -- creating a function to generate unique random id
-DROP FUNCTION IF EXISTS geocoding_edit.make_ruid()  ; 
-CREATE OR REPLACE  FUNCTION geocoding_edit.make_ruid() RETURNS text AS $$ -- found on internet
+DROP FUNCTION IF EXISTS geocoding_edit.make_ruid(potential_ruid text , out ruid text)   ; 
+CREATE OR REPLACE  FUNCTION geocoding_edit.make_ruid(potential_ruid text DEFAULT NULL, OUT ruid text )AS $$ -- found on internet
 BEGIN
-	RETURN md5(''||timeofday()::text||(random()*10000)::int::text);
+	SELECT CASE WHEN length(cleaned_ruid)=32 AND length(potential_ruid) = 32 THEN cleaned_ruid 
+		ELSE md5(''||timeofday()::text||(random()*10000)::int::text) END INTO ruid
+	FROM regexp_replace(potential_ruid, '[^[:alnum:]]','', 'g') AS cleaned_ruid ; 
+	RETURN ;
 END;
 $$ LANGUAGE PLPGSQL VOLATILE CALLED ON NULL INPUT;
 /*
-	SELECT s, geocoding_edit.make_ruid()
+	SELECT s, geocoding_edit.make_ruid('a52fe993a7 cde3d9149282')
 	FROM generate_series(1,10) AS s  ;
 */
 
+SELECT length(potential_ruid)=32 , 
+FROM CAST('f1c90ab034e519865613a33bf6135d8f' As text) AS potential_ruid
+	, 
 
 
 -----------
@@ -194,12 +200,16 @@ INSERT INTO "geocoding_edit"."geocoding_results_v" ( "gidg","rank","historical_n
 
 
 SELECT st_astext(geom), *
-FROM geocoding_edit.geocoding_results_v  
-WHERE ruid ILIKE '96f7db5a1a%'; 
-POINT(2.35236704349518 48.8584575876129)
-POINT(2.35258162021637 48.8586128794613)
-POINT(2.35095620155334 48.8588634630188)
-POINT(2.36304759979248 48.8516701573163)
+FROM geocoding_edit.geocoding_results  
+WHERE ruid ILIKE 'b245ff537415df5%';   
+
+UPDATE geocoding_edit.geocoding_results_v SET (normalised_name, ruid)
+= ('test_updating','0a126da8817b4fbd4191e7ba4e70dc52')
+WHERE  ruid ILIKE '0a126da88%';
+
+SELECT st_astext(geom), *
+FROM geocoding_edit.geocoding_results  
+WHERE ruid ILIKE 'bd11ece9ce5324ed2a75e74e257dc3b0%';   
 
  
 /*
