@@ -154,7 +154,7 @@ $app->get('/', function ($request, $response, $args) {
 
     sanitize_input($adresse,$date,$n_results);
 	
-	if 	($interactive_return==false){
+	if 	($interactive_return == "0" or is_null($interactive_return)){
 		$json_results = retrieve_results_from_db($adresse,$date,$n_results,$precise_localisation,$interactive_return);
 		return $response->withStatus(200)->write(json_encode($json_results));
 	}else{
