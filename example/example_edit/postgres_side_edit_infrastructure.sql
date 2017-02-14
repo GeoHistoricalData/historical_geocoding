@@ -5,13 +5,15 @@ CREATE SCHEMA IF NOT EXISTS geocoding_edit;
 -- example of creating a result table for edit with geoserver and leaflet via WFS-T
 
 -- creating an example table
-DROP TABLE IF EXISTS geocoding_edit.geocoding_results;
+DROP TABLE IF EXISTS geocoding_edit.geocoding_results CASCADE;
 CREATE TABLE IF NOT EXISTS geocoding_edit.geocoding_results 
 (
   gid serial primary key,
+  input_adresse_query text, 
   rank integer NOT NULL,
   historical_name text,
   normalised_name text,
+  fuzzy_date daterange,
   geom geometry(point,4326), 
   historical_source text,
   numerical_origin_process text,
@@ -31,14 +33,15 @@ WITH (
 
 TRUNCATE geocoding_edit.geocoding_results ; 
 INSERT INTO geocoding_edit.geocoding_results
-SELECT row_number() over() as gid, rank, historical_name, normalised_name
+SELECT row_number() over() as gid, '12 rue temple, paris; 1872',rank, historical_name, normalised_name
+	, sfti2daterange(COALESCE(f.specific_fuzzy_date,hs.default_fuzzy_date)) AS fuzzy_date--fuzzy date
 	, ST_Centroid(ST_Transform(ST_GeometryN(St_CollectionExtract(geom,1),1),4326))::geometry(point,4326) AS geom
 	, historical_source, numerical_origin_process
 	,semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance
 	, aggregated_distance, spatial_precision, confidence_in_result
 	, CASE WHEN rank %2= 0 THEN ruid1::text ELSE ruid2 END AS ruid 
 FROM historical_geocoding.geocode_name_foolproof(
-	query_adress:='14 rue temple, paris'
+	query_adress:='12 rue temple, paris'
 	, query_date:= sfti_makesfti('1872-11-15'::date) -- sfti_makesftix(1872,1873,1880,1881)  -- sfti_makesfti('1972-11-15');
 	, use_precise_localisation := true 
 	, ordering_priority_function := '100*(semantic_distance) + 0.1 * temporal_distance + 1* number_distance + 0.1 *spatial_precision + 0.001 * scale_distance +  0.0001 * spatial_distance'
@@ -48,20 +51,28 @@ FROM historical_geocoding.geocode_name_foolproof(
 		, optional_scale_range := numrange(0,100)
 		, optional_reference_geometry := NULL -- ST_Buffer(ST_GeomFromText('POINT(652208.7 6861682.4)',2154),5)
 		, optional_max_spatial_distance := 10000
-) AS  f, geocoding_edit.make_ruid()as ruid1, geocoding_edit.make_ruid()as ruid2  ; 
+	) AS  f
+	LEFT OUTER JOIN geohistorical_object.historical_source AS hs ON (hs.short_name = f.historical_source)
+	, geocoding_edit.make_ruid()as ruid1, geocoding_edit.make_ruid()as ruid2 ; 
+ 
 
 
 -- TRUNCATE geocoding_edit.geocoding_results ;
 SELECT *
 FROM geocoding_edit.geocoding_results ;
+ 
+
 
 
 -- creating a view, necessary as a wrapper for trigger, allow to avoid having trigger directly on the base table, and ths separate edit coming from user and edit coming from refresh
 TRUNCATE geocoding_edit.geocoding_results_v ; 
 DROP VIEW IF EXISTS geocoding_edit.geocoding_results_v ;  
 CREATE VIEW geocoding_edit.geocoding_results_v AS 
-SELECT gid AS gidg, gid, rank, historical_name, normalised_name
-	,   geom
+SELECT gid AS gidg, gid, 
+	input_adresse_query
+	, rank, historical_name, normalised_name
+	, fuzzy_date::text
+	, geom
 	, historical_source, numerical_origin_process
 	,semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance
 	, aggregated_distance, spatial_precision, confidence_in_result 
@@ -88,8 +99,31 @@ $$ LANGUAGE PLPGSQL VOLATILE CALLED ON NULL INPUT;
 */
 
 SELECT length(potential_ruid)=32 , 
-FROM CAST('f1c90ab034e519865613a33bf6135d8f' As text) AS potential_ruid
-	, 
+FROM CAST('f1c90ab034e519865613a33bf6135d8f' As text) AS potential_ruid ;
+
+
+--------------
+-- adding a table to store final addition to geocoding
+	-- adding a new numerical origin process : the user edit via the internet appli
+INSERT INTO geohistorical_object.numerical_origin_process VALUES (
+      'website_interactive_edit_v1',
+      'Using a custom leaflet application in browser, user edit the historical name, normalized name and or geometry of the adress',
+      'See web site https://www.geohistoricaldata.org/interactive_geocoding/Leaflet-WFST/examples/geocoding.html# and github https://github.com/GeoHistoricalData/historical_geocoding',
+      sfti_makesfti(2017,2018,2018,2019), 
+      '{"default": 0.1, "building_number":0.1}' );
+
+DROP TABLE IF EXISTS geocoding_edit.user_edit_added_to_geocoding; 
+CREATE TABLE geocoding_edit.user_edit_added_to_geocoding( 
+		gid serial primary key REFERENCES geocoding_edit.geocoding_results (gid)
+		, ruid text
+		, input_adresse_query text
+	) INHERITS (historical_geocoding.precise_localisation) ; 
+SELECT geohistorical_object.register_geohistorical_object_table( 'geocoding_edit', 'user_edit_added_to_geocoding'::text) ;
+
+CREATE INDEX ON geocoding_edit.user_edit_added_to_geocoding (ruid) ; 
+
+SELECT *
+FROM geocoding_edit.user_edit_added_to_geocoding ; 
 
 
 -----------
@@ -143,26 +177,41 @@ DROP FUNCTION IF EXISTS geocoding_edit.geocoding_results_edit_check() CASCADE;
 CREATE OR REPLACE FUNCTION geocoding_edit.geocoding_results_edit_check() RETURNS trigger AS 
 $$
    DECLARE 
-	affected_row_nb int := 0 ; 
+	affected_row_nb int := 0 ;
+	_useless record ; 
     BEGIN
-	
+
 	-- only workingon update. No inserting allowed, no deleting allowed
 	IF TG_OP = 'UPDATE' OR TG_OP = 'INSERT' THEN 
 	 
 		UPDATE  geocoding_edit.geocoding_results AS gr SET (historical_name, normalised_name
-	,   geom
-	, historical_source, numerical_origin_process
-	,semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance
-	, aggregated_distance, spatial_precision, confidence_in_result ) = (NEW.historical_name, NEW.normalised_name
-	,   NEW.geom
-	, NEW.historical_source, NEW.numerical_origin_process
-	,NEW.semantic_distance,  NEW.temporal_distance, NEW.number_distance, NEW.scale_distance,NEW.spatial_distance
-	, NEW.aggregated_distance, NEW.spatial_precision, NEW.confidence_in_result  ) 
+	,   geom  ) = (NEW.historical_name, NEW.normalised_name , NEW.geom ) 
 	WHERE gr.gid = NEW.gidg 
 		AND gr.ruid = NEW.ruid     --this is the security to prevent a user to change other users stuff  
         ;
-		GET DIAGNOSTICS affected_row_nb := ROW_COUNT;
-		RAISE NOTICE 'affected_row : %', affected_row_nb;
+		GET DIAGNOSTICS affected_row_nb := ROW_COUNT; 
+		 -- filling the definite table of results with an upsert :
+		IF (TG_OP = 'INSERT' OR 
+			TG_OP='UPDATE' AND (ST_Distance(ST_Transform(NEW.geom,2154),ST_transform(OLD.geom,2154))>0.1 OR NEW.historical_name != OLD.historical_name OR NEW.normalised_name != OLD.normalised_name)
+		)THEN 
+		
+		--RAISE WARNING 'toto' ;
+		WITH updating AS (
+			UPDATE geocoding_edit.user_edit_added_to_geocoding As loc SET 
+				(historical_name, normalised_name, geom, historical_source, numerical_origin_process, ruid) = 
+				(NEW.historical_name, NEW.normalised_name, ST_Transform(NEW.geom,2154),NEW.historical_source, 'website_interactive_edit_v1', NEW.ruid )
+			WHERE loc.gid = NEW.gid 
+			RETURNING NEW.gid)
+		,inserting AS (
+		INSERT INTO geocoding_edit.user_edit_added_to_geocoding 
+			(gid, historical_name, normalised_name, geom, historical_source, numerical_origin_process, ruid,input_adresse_query)
+			SELECT NEW.gid, NEW.historical_name, NEW.normalised_name,  ST_Transform(NEW.geom,2154),NEW.historical_source, 'website_interactive_edit_v1'::text, NEW.ruid, NEW.input_adresse_query 
+			WHERE NOT EXISTS (SELECT 1 FROM updating LIMIT 1)
+			RETURNING 1 )
+		SELECT 1 INTO  _useless
+		FROM inserting; 
+		END IF; 
+		--RAISE NOTICE 'affected_row : %', affected_row_nb;
 		RETURN NEW;
         ELSE
 		RAISE WARNING 'TG_OP: % , input : % ', TG_OP,OLD; 
@@ -194,10 +243,18 @@ WITH to_be_updated AS (
 INSERT INTO geocoding_edit.geocoding_results_v  
 SELECT * FROM to_be_updated;  
 
+SELECT *
+FROM historical_geocoding.precise_localisation 
+WHERE numerical_origin_process = 'website_interactive_edit_v1'
+LIMIT 1 
 
-INSERT INTO "geocoding_edit"."geocoding_results_v" ( "gidg","rank","historical_name","normalised_name","geom","historical_source","numerical_origin_process","semantic_distance","temporal_distance","number_distance","scale_distance","spatial_distance","aggregated_distance","spatial_precision","confidence_in_result","ruid","gid" ) 
-	VALUES ( 347,1,'12 rue du temple','12 rue du temple , Paris',ST_GeomFromText('POINT (2.3525655269622803 48.858835228314476)', 4326),'poubelle_municipal_paris','poubelle_paris_number',0.0,28.0,0.0,0.0,0.0,3.14999,3.5,1.0,'fbc92eda4214e14ee5e578608172d101',348)
+INSERT INTO "geocoding_edit"."geocoding_results_v" ( "gidg", input_adresse_query,"rank","historical_name","normalised_name","fuzzy_date","geom","historical_source","numerical_origin_process","semantic_distance","temporal_distance","number_distance","scale_distance","spatial_distance","aggregated_distance","spatial_precision","confidence_in_result","ruid","gid" ) 
+	VALUES (  348, '12 rue du temple, PARIS; 1876',1,'12 rue du temple bla','12 rue du temple, Paris','[1783-05-30,1799-01-01)',ST_GeomFromText('POINT (2.3525655269622803 48.858835228314476)', 4326),'poubelle_municipal_paris','poubelle_paris_number',0.0,28.0,0.0,0.0,0.0,3.14999,3.5,1.0,'fbc92eda4214e14ee5e578608172d101',348)
 
+
+SELECT *
+FROM geocoding_edit.geocoding_results_v
+TRUNCATE geocoding_edit.geocoding_results CASCADE
 
 SELECT st_astext(geom), *
 FROM geocoding_edit.geocoding_results  

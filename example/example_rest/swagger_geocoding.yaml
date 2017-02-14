@@ -62,11 +62,11 @@ paths:
           default: true 
         - name: output_for_interactive_editing
           in: query
-          description: If set to `true` (or `1`), the geocoding result candidates will be stored inside a result table, and a random unique id (ruid) will be returned. This ruid is then necessary to view adn interactively edit the results.
+          description: If not "0" or null, the result is written in a table in the server. This result can be accessed via a ruid that is returned by server. This ruid is equal to output_for_interactive_editing is it has 32 alphanumerical char.
           required: false
-          type: boolean
-          format: boolean
-          default: false
+          type: string
+          format: string
+          default: "0"
       responses:
         '200':
           description: Adresse candidates found, returning the candidates
@@ -91,7 +91,7 @@ paths:
               spatial_precision: 5
               confidence_in_result: 1
         '201':
-          description: Adresse candidates found, returning ruid for interactive editing
+          description: Adresse candidates found, returning ruid for interactive editing. The ruid is use_precise_localisation if this one has 32 alphanumerical character.
           schema:
             type: string 
           examples:

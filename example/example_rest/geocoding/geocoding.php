@@ -72,7 +72,7 @@ function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisatio
     $dbconn = connect_to_db() ;
 	
 	// case when we do need the results
-	if ($interactive_return == false) {
+	if ($interactive_return == "0" or is_null($interactive_return) ) {
 		/*prepare query and send it*/
 		$query = " 
 		SELECT rank::text, historical_name::text, normalised_name::text
@@ -104,8 +104,9 @@ function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisatio
 		//case when the geocoding results are written in the result table, and a random unique identifier is returned.
 		$query = "  
 		WITH inserting AS (
-			INSERT INTO geocoding_edit.geocoding_results (rank, historical_name, normalised_name ,  geom , historical_source, numerical_origin_process ,semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance , aggregated_distance, spatial_precision, confidence_in_result  ,  ruid)
-			SELECT rank::int, historical_name::text, normalised_name::text
+			INSERT INTO geocoding_edit.geocoding_results (rank,input_adresse_query, historical_name, normalised_name ,fuzzy_date,  geom , historical_source, numerical_origin_process ,semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance , aggregated_distance, spatial_precision, confidence_in_result  ,  ruid)
+			SELECT rank::int,input_adresse_query ,historical_name::text, normalised_name::text
+                , sfti2daterange(COALESCE(f.specific_fuzzy_date,hs.default_fuzzy_date)) AS fuzzy_date
 				, geom2 
 				, historical_source::text, numerical_origin_process::text
 				, historical_geocoding.round(semantic_distance::float,3 ) , historical_geocoding.round(temporal_distance::float,3) 
@@ -120,11 +121,13 @@ function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisatio
 			use_precise_localisation:= $4::integer::boolean ,
 			max_number_of_candidates:=$3::integer
 			  ) As f
+            LEFT OUTER JOIN geohistorical_object.historical_source AS hs ON (hs.short_name = f.historical_source)
 			,ST_Transform(ST_Centroid(ST_SnapToGrid(geom,0.01)),4326) AS geom2
-			, geocoding_edit.make_ruid() AS ruid
+			, geocoding_edit.make_ruid($5) AS ruid
+            , concat($1,'; ',$2) as input_adresse_query
 		RETURNING ruid 
 		)SELECT ruid FROM inserting LIMIT 1 ; " ;
-		$result = pg_query_params($dbconn, $query, array($adresse,$date,$n_results,$precise_localisation));
+		$result = pg_query_params($dbconn, $query, array($adresse,$date,$n_results,$precise_localisation,$interactive_return));
 		if (!$result) {
 		  echo "geocoding found no suitable result, have you indicated the city? : 12 rue du temple, PARIS\n";
 		  exit;
@@ -147,7 +150,7 @@ $app->get('/', function ($request, $response, $args) {
     $date = intval($request->getQueryParam("date", $default = "1870"));
     $n_results = intval($request->getQueryParam("number_of_results", $default = "1"));
     $precise_localisation =(int)boolval($request->getQueryParam("use_precise_localisation", $default = "TRUE"));
-	$interactive_return =(int)(bool)intval($request->getQueryParam("output_for_interactive_editing", $default = "0"));
+	$interactive_return =$request->getQueryParam("output_for_interactive_editing", $default = "0");
 
     sanitize_input($adresse,$date,$n_results);
 	
