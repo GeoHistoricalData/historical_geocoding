@@ -76,6 +76,7 @@ function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisatio
 		/*prepare query and send it*/
 		$query = " 
 		SELECT rank::text, historical_name::text, normalised_name::text
+                        , sfti2daterange(COALESCE(f.specific_fuzzy_date,hs.default_fuzzy_date)) AS fuzzy_date
 			, CASE WHEN ST_NumGeometries(geom2) =1 THEN ST_AsText(ST_GeometryN(geom2,1)) ELSE ST_AsText(geom2) END AS geom
 			, historical_source::text, numerical_origin_process::text
 			, historical_geocoding.round(semantic_distance::float,3 )as semantic_distance , historical_geocoding.round(temporal_distance::float,3) AS temporal_distance
@@ -89,6 +90,7 @@ function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisatio
 		use_precise_localisation:= $4::integer::boolean ,
 		max_number_of_candidates:=$3::integer
 		  ) As f
+                  LEFT OUTER JOIN geohistorical_object.historical_source AS hs ON (hs.short_name = f.historical_source)
 		,ST_SnapToGrid(geom,0.01) AS geom2 ; " ;
 		$result = pg_query_params($dbconn, $query, array($adresse,$date,$n_results,$precise_localisation));
 		if (!$result) {
