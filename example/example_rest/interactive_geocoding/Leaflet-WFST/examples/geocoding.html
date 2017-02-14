@@ -371,8 +371,14 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
       //this function is called when existing the edit mode of a marker by clicking on marker edit  button
       marker2.feature.properties.ruid = geocoding.ruid ; 
       console.log("marker:edited",marker2);
-      wfst.editLayer(marker2);
+      marker2.bindLabel(getLabelContent(marker2) ,{
+              noHide: true,
+              direction: 'auto',
+              pane: map.getPanes.popupPane
+            }); 
+      marker2.hideLabel();
       marker2.showLabel();
+      wfst.editLayer(marker2);
     });
 
     marker2.on('marker:deleted', function () {

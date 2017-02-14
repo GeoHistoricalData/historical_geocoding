@@ -49,7 +49,9 @@
         })
         propertiesChanged = true;
 
+
         if (propertiesChanged) {
+          map.removeLayer(marker.label) ; 
           sidebar._marker.fire('marker:edited');
         }
       };
@@ -61,8 +63,8 @@
     sidebar_adress.hide();
     //document.getElementById("applyButton").disabled = false;
     sidebar.show();
-    sidebar._marker.hideLabel();
-    sidebar._marker.showLabel();
+    //sidebar._marker.hideLabel();
+    //marker.showLabel();
   };
   
   
