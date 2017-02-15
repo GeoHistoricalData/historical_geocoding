@@ -7,13 +7,13 @@
 		<meta name="theme-color" content="#ffffff">
 		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
 		<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Arvo|Source+Sans+Pro:400,400italic,700|Lato:300,400">
-		<link rel="stylesheet" href="/resources/css/unsemantic.css">
-		<link rel="stylesheet" href="/resources/css/common.css">
-		<link rel="stylesheet" href="/resources/css/demo.css">
-		<script src="/resources/js/jquery.min.js"></script>
-		<script src="/resources/js/common.js"></script>
-		<script src="/resources/js/papaparse.js"></script>
-		<script src="/resources/js/demo.js"></script>
+		<link rel="stylesheet" href="./resources/css/unsemantic.css">
+		<link rel="stylesheet" href="./resources/css/common.css">
+		<link rel="stylesheet" href="./resources/css/demo.css">
+		<script src="./resources/js/jquery.min.js"></script>
+		<script src="./resources/js/common.js"></script>
+		<script src="./resources/js/papaparse.js"></script>
+		<script src="./resources/js/demo.js"></script>
 	</head>
 	<body>
 
@@ -53,11 +53,13 @@
 			</header>
 
 
-			<h1>Choose a Demo</h1>
-
+			<h1>Enter your CSV file to be geocoded</h1>
+            <h4>Your CSV file must have 2 columns and the first line must be the column name : <br>
+                Column 1 : "address" , example : "12 rue du temple, Paris"  <br>
+                Column 2 : "address_date", year of your adresse. For instance "1875".</h4>
 			<div class="tabs">
-				<div class="tab active" id="tab-string">String</div>
-				<div class="tab" id="tab-local">Local File(s)</div>
+				<div class="tab" id="tab-string">String</div>
+				<div class="tab active" id="tab-local">Local File(s)</div>
 				<div class="tab" id="tab-remote">Remote File</div>
 				<div class="tab" id="tab-unparse">JSON to CSV</div>
 			</div>
@@ -66,17 +68,17 @@
 
 				<div class="grid-25">
 					<label>
-						<input type="checkbox" id="stream"> Stream
+						<input type="checkbox" id="stream" checked="true"> Stream
 						<dfn>Results are delivered row by row to a step function. Use with large inputs that would crash the browser.</dfn>
 					</label>
 
 					<label>
-						<input type="checkbox" id="worker"> Worker thread
+						<input type="checkbox" id="worker" checked="true"> Worker thread
 						<dfn>Uses a separate thread so the web page doesn't lock up.</dfn>
 					</label>
 
 					<label>
-						<input type="checkbox" id="header"> Header row
+						<input type="checkbox" id="header" checked="true"> Header row
 						<dfn>Keys data by field name rather than an array.</dfn>
 					</label>
 
@@ -86,7 +88,7 @@
 					</label>
 
 					<label>
-						<input type="checkbox" id="skipEmptyLines"> Skip empty lines
+						<input type="checkbox" id="skipEmptyLines" checked="true"> Skip empty lines
 						<dfn>By default, empty lines are parsed; check to skip.</dfn>
 					</label>
 				</div>

@@ -6,6 +6,7 @@ var maxUnparseLength = 10000;
 
 $(function()
 {
+    $('.input-area').hide();
 	// Tabs
 	$('#tab-string').click(function()
 	{
@@ -47,7 +48,8 @@ $(function()
 		inputType = "json";
 	});
 
-
+var l = $('#tab-local');
+l.click();
 
 	// Sample files
 	$('#remote-normal-file').click(function() {
