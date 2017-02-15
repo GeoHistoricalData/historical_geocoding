@@ -440,7 +440,7 @@ L.tileLayer.wms('https://makicarto.fr/geoserver/paris/ows',{
     });
     
     marker2.on('popuptoolbar:shown', function () {
-      showSidebar(marker2);
+      showSidebar(this);
       document.getElementById("applyButton").disabled = false;
     });
 
