@@ -2,6 +2,16 @@
   var editMarkerToolbarAction = L.ToolbarAction.extend({
     initialize: function (map, marker, options) {
       console.log("intiialising marker",marker);
+      
+      if (!marker.label){
+      marker.bindLabel(getLabelContent(marker) ,{
+              noHide: true,
+              direction: 'auto',
+              pane: map.getPanes.popupPane
+            }); 
+      marker.showLabel();
+      }
+      
       this._map = map;
       this._marker = marker;
 
@@ -251,6 +261,7 @@
 
       that._removeToolbar = function () {
         console.log("removing tool bar",that);
+
         if (that._onClusterGroupAnimationEnd) {
           marker.options.clusterGroup.off('animationend', that._onClusterGroupAnimationEnd);
           that._onClusterGroupAnimationEnd = undefined;
@@ -278,6 +289,15 @@
         marker._popupToolbar = undefined;
 
         marker.fire('popuptoolbar:closed');
+        
+         if (!marker.label){
+           marker.bindLabel(getLabelContent(marker) ,{
+                noHide: true,
+                direction: 'auto',
+                pane: map.getPanes.popupPane
+              });
+            marker.showLabel();
+          }
       };
 
       // Bring to front imitation.

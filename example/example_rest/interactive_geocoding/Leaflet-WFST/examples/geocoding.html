@@ -340,6 +340,7 @@ L.tileLayer.wms('https://makicarto.fr/geoserver/paris/ows',{
     shadowSize: [41, 41],
     shadowAnchor: [12, 40]
   });
+  
 
   var createEditableMarker = function (latlng, options) {
     console.log("creaditng editable marker", latlng, options);
@@ -351,11 +352,11 @@ L.tileLayer.wms('https://makicarto.fr/geoserver/paris/ows',{
       toolbarCloseIconClass: 'fa fa-lg fa-close',
       showLabelOnEdit: true,
       getLabelContent: function () {
-        var content = marker2.feature.properties.normalised_name + '<br>'
-        content += marker2.feature.properties.historical_source+ '<br>';
-        content += 'tot:'+round(parseFloat(marker2.feature.properties.aggregated_distance),2) ; 
-        content += '  sem:'+round(parseFloat(marker2.feature.properties.semantic_distance),2) ; 
-        content += '  t:'+round(parseFloat(marker2.feature.properties.temporal_distance),0) ; 
+        var content = this.feature.properties.normalised_name + '<br>'
+        content += this.feature.properties.historical_source+ '<br>';
+        content += 'tot:'+round(parseFloat(this.feature.properties.aggregated_distance),2) ; 
+        content += '  sem:'+round(parseFloat(this.feature.properties.semantic_distance),2) ; 
+        content += '  t:'+round(parseFloat(this.feature.properties.temporal_distance),0) ; 
         return content;
       },
       hideToolbarAfterEdit: false,
