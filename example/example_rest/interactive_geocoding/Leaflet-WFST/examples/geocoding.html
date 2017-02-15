@@ -54,6 +54,8 @@
 <div id="sidebar">
   <h1 id="title">Geocoding point properties</h1>
   <br>
+  <form>
+  <fieldset id="sidebar_form" disabled=true>
   <input id="iquery" type="text" size="40" name="iquery" readonly="readonly"/>
   <label id="iqueryLabel" name="iquery">User provided geocoding query</label><br>
   <br>
@@ -91,7 +93,9 @@
   <label id="ndistLabel" name="ndist">Building number distance</label><br>
   
   <input id="applyButton" type="button" value="Apply" disabled/>
-   
+  
+  </fieldset>
+  </form>
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
@@ -168,8 +172,16 @@ function round(value, exp) {//found on internet
   var sidebar = L.control.sidebar('sidebar', {
     closeButton: true,
     autoPan: false, 
-    position: 'right'
+    position: 'right',
   });
+  
+   var enableForm = function(){
+     document.getElementById("sidebar_form").disabled = false;
+    };
+   var disableForm = function(){
+      document.getElementById("sidebar_form").disabled = true;
+    };
+
   map.addControl(sidebar);
   var addWFSTsource = function () {
     wfst = new L.WFST({
@@ -297,15 +309,17 @@ function round(value, exp) {//found on internet
   map.addControl(sidebar);
 
 /*
-L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
-    layers: 'alphand_poubelle',
-    //format: 'image/jpeg',
+//L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
+L.tileLayer.wms('https://makicarto.fr/geoserver/paris/ows',{
+    layers: 'poubelle1888_p6',//'alphand_poubelle',
+    format: 'image/png',
     crs: L.CRS.EPSG4326,
-    //srs: 'EPSG:4326'
+    srs: 'EPSG:4326'
   }).addTo(map);
 */
 
 // open street map layer
+
   L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
@@ -431,6 +445,7 @@ L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
 
     marker2.on('popuptoolbar:closed', function () {
       document.getElementById("applyButton").disabled = true;
+      document.getElementById("sidebar_form").disabled = true;
       hideSidebar();
     });
 

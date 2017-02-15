@@ -1,6 +1,7 @@
 (function (window, document, undefined) {
   var editMarkerToolbarAction = L.ToolbarAction.extend({
     initialize: function (map, marker, options) {
+      console.log("intiialising marker",marker);
       this._map = map;
       this._marker = marker;
 
@@ -24,6 +25,7 @@
     addHooks: function () {
       var that = this;
 
+      console.log("marker tool tip hook",this);
       that._marker._popupToolbar._onMarkerDrag = function (e) {
         that._marker._popupToolbar.setLatLng(that._marker.getLatLng());
         if (that._marker.label) {
@@ -40,6 +42,9 @@
 
       if (!that._marker._enableEditMode) {
         that._marker._enableEditMode = function () {
+          console.log("enabling edit mode for marker, ",that);
+          console.log("sidebar:",sidebar);
+          enableForm();
           that._marker._editModeEnabled = true;
 
           that._marker.options.clusterGroup.removeLayer(that._marker);
@@ -74,6 +79,7 @@
       }
 
       if (!that._marker._disableEditMode) {
+        console.log("disabling edit mode partially",this);
         that._marker._disableEditMode = function () {
           that._marker._editModeEnabled = false;
 
@@ -113,6 +119,9 @@
       }
 
       if (that._marker._editModeEnabled) {
+        
+        console.log("disabling edit mode for marker",this);
+        disableForm();
         that._marker._disableEditMode();
 
         if (that._marker._dragged) {
@@ -241,6 +250,7 @@
       }
 
       that._removeToolbar = function () {
+        console.log("removing tool bar",that);
         if (that._onClusterGroupAnimationEnd) {
           marker.options.clusterGroup.off('animationend', that._onClusterGroupAnimationEnd);
           that._onClusterGroupAnimationEnd = undefined;
@@ -295,7 +305,8 @@
       },
       showLabelOnEdit: true,
       hideToolbarAfterEdit: false,
-      dontShowToolbarOnFirstClick: false
+      dontShowToolbarOnFirstClick: false,
+      nohide: true
     },
 
     initialize: function (latlng, options) {
@@ -320,6 +331,7 @@
       var markerWasClicked = false;
 
       this.on('click', function (e) {
+        console.log("clicking marker"); 
         if (!this._popupToolbar && (!this.options.dontShowToolbarOnFirstClick || this.options.dontShowToolbarOnFirstClick && markerWasClicked)) {
           var prevMarker = this.options.clusterGroup._prevEditedMarker = this.options.clusterGroup._currentEditedMarker || {};
           this.options.clusterGroup._currentEditedMarker = this;
