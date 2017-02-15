@@ -95,7 +95,7 @@ l.click();
 
 
 		if (inputType == "local")
-		{
+		{//this is the main point of interest to us
 			if (!$('#files')[0].files.length)
 			{
 				alert("Please choose at least one file to parse.");
@@ -115,6 +115,9 @@ l.click();
 					firstError = firstError || err;
 					errorCount++;
 				},
+                step: function(row) {
+                    console.log("Row: ", row.data);
+                },
 				complete: function()
 				{
 					end = now();
@@ -234,7 +237,7 @@ function completeFn(results)
 			rowCount = results.data.length;
 	}
 
-	printStats("Parse complete");
+	//printStats("Parse complete");
 	console.log("    Results:", results);
 
 	// icky hack
