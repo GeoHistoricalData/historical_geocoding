@@ -206,14 +206,72 @@ function buildConfig()
 		download: inputType == "remote"
 	};
 }
+var ruid = "1" ; 
+var shall_we_wait = false;  
+var current_result_index = 0; 
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+function wait(){
+    while(shall_we_wait ==true){
+        sleep(100);
+    };
+}
+
+var geocodeOneAdress = function(address, address_date ){
+    /** @short Given one line of CSV, prepare an URL and send it to geocoder service
+    * @param ""data"" is the output of one line of parse function, provided by stepFn
+    */ 
+    console.log("address:", address, "address_date", address_date); 
+    cleaned_user_n_results = 1;
+    cleaned_user_use_precise_localisation = 1 ;
+    interactive_editing = ruid ; 
+    
+    var base_path = "https://www.geohistoricaldata.org/geocoding/geocoding.php"
+    var dataString = encodeURI('adresse='+address+'&date='+address_date+'&number_of_results='+cleaned_user_n_results+'&use_precise_localisation='+cleaned_user_use_precise_localisation+'&output_for_interactive_editing='+interactive_editing);
+    
+    console.log(base_path+"?"+dataString);    
+
+    test = $.ajax({
+      type: "GET",
+      async: true,
+      cache: false,
+      timeout: 5000,
+      url: base_path+"?"+dataString,//+"&callback=?",
+      dataType: 'JSONP',
+      success: function(data){
+        console.log("successfully send the parameters to geocoding") ; 
+        ruid = data["ruid"];
+        console.log(ruid);
+        shall_we_wait = false;
+      },
+      error: function(jqXHR, textStatus, errorThrown){ 
+        if(jqXHR.status==201 || jqXHR.status==200){
+          // we received the expected answer, writting new ruid, loading point from server 
+            console.log("here is the returned stuff",jqXHR);
+            ruid = JSON.parse(jqXHR.responseText)[0]["ruid"]; 
+            console.log("ruid: ",ruid);
+        }else{//ohoh : received a strange return code
+          console.log("error in geocoding : ",jqXHR,textStatus,errorThrown)
+          shall_we_wait = false;
+          //alert("error in sending your adresse to geocoder server: "+jqXHR+textStatus+errorThrown);
+        }
+      }
+    }); 
+    return; 
+}
 function stepFn(results, parser)
-{
+{   
 	stepped++;
 	if (results)
 	{
 		if (results.data)
 			rowCount += results.data.length;
+            //geocoding the adresse 
+            // shall_we_wait = true; 
+            // geocodeOneAdress(results.data);
+            // wait();
 		if (results.errors)
 		{
 			errorCount += results.errors.length;
@@ -239,7 +297,36 @@ function completeFn(results)
 
 	//printStats("Parse complete");
 	console.log("    Results:", results);
-
+    
+    //starting to send the adress to server;
+    //check that the required columns names are OK
+    if(!results.data[0].address || !results.data[0].address_date){
+        alert("error : your csv data must contain a column 'address' and a column 'address_date'") ;
+    } 
+    skip_line = false ; 
+    for (var i = 0; i < results.data.length; i++) { 
+        skip_line=false ;
+        //check quality of input date
+        address_date = parseInt(results.data[i].address_date); 
+        address = results.data[i].address;
+        console.log("add and date : ",address, " ", address_date);
+        if(address_date<0 || address_date > 2100){
+            alert("you provided an ivalid date :'",dat.address_date,"'"," for address:",address," around line ",i) ;
+            skip_line = true;
+        }
+        if(!address || !address_date){
+            alert("you provided an ivalid date or address :'",dat.address_date,"'"," for address:",address," around line ",i) ;
+            skip_line = true;
+        }
+        if(skip_line==false){
+            shall_we_wait = true ;
+            geocodeOneAdress(address, address_date);
+            //wait();
+        }
+        
+        
+    }
+    
 	// icky hack
 	setTimeout(enableButton, 100);
 }
