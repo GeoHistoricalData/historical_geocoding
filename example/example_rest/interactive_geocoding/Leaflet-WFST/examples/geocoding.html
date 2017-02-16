@@ -109,6 +109,7 @@
 <script src="lib/L.Control.Sidebar.js"></script>
 <script src="../dist/Leaflet-WFST.src.js"></script>
 <script src="./geocoding_spinner.js"></script>
+<script src="../dist/leaflet-tilelayer-wmts.js"></script>
 <script src="./geocoding_form.js"></script>
 <script>
  // Note : spinner is an annimation that plays while loading
@@ -308,22 +309,22 @@ function round(value, exp) {//found on internet
   });
   map.addControl(sidebar);
 
-/*
+
 //L.tileLayer.wms('https://www.geohistoricaldata.org/geoserver/paris/wms', {
 L.tileLayer.wms('https://makicarto.fr/geoserver/paris/ows',{
-    layers: 'poubelle1888_p6',//'alphand_poubelle',
+    layers: 'poubelle_1888',//'alphand_poubelle',
     format: 'image/png',
     crs: L.CRS.EPSG4326,
     srs: 'EPSG:4326'
   }).addTo(map);
-*/
+
 
 // open street map layer
-
+/*
   L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
-
+*/
   var markers = new L.MarkerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: 30
@@ -564,6 +565,16 @@ L.tileLayer.wms('https://makicarto.fr/geoserver/paris/ows',{
       })
     ]
   }).addTo(map);
+ 
+//if the input URL contains a ruid, fils the ruid display, and simulate a click on the correct button
+var urlParams = new URLSearchParams(window.location.search);
+if(urlParams.has('ruid') && String(urlParams.get('ruid')).length==32){
+  geocoding.ruid = urlParams.get('ruid');
+  document.getElementById('user_provided_ruid').value = urlParams.get('ruid');
+  //simulating click on button
+  $("#geocodeButton2").click();
+}
+  
 </script>
 </body>
 </html>
