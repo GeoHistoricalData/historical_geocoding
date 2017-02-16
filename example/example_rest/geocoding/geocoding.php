@@ -142,6 +142,30 @@ function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisatio
 	}
 
 }
+function ruid2json($ruid){
+    $dbconn = connect_to_db() ;
+    $query = " 
+		SELECT  gid, 
+            input_adresse_query
+            , rank, historical_name, normalised_name
+            , fuzzy_date::text
+            , ST_AsText(geom) AS geom
+            , historical_source, numerical_origin_process
+            , aggregated_distance
+            , spatial_precision, confidence_in_result 
+            , semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance
+            ,ruid
+        FROM geocoding_edit.geocoding_results
+        WHERE ruid = quote_literal($1);" ;
+    $result = pg_query_params($dbconn, $query, array($ruid));
+    if (!$result) {
+      echo "no result foudn for this ruid\n";
+      exit;
+    }
+    $all_res_row = pg_fetch_all($result); 
+    pg_close($dbconn) ;
+    return $all_res_row;
+}
 
 $app = new \Slim\App(["settings" => $config]);
 
@@ -162,13 +186,20 @@ $app->get('/', function ($request, $response, $args) {
 	}else{
 		$json_results = retrieve_results_from_db($adresse,$date,$n_results,$precise_localisation,$interactive_return);
 		return $response->withStatus(201)->write(json_encode($json_results));
-	}
-		
-    
-
-
-    
+	}  
     //return $response->withStatus(200)->write($n_results);
+});
+
+$app->get('/ruid2json', function ($request, $response, $args) {
+     
+    $ruid = $request->getQueryParam("ruid", $default = "1"); 
+    if(mb_strlen($ruid)!=32){
+        return $response->withStatus(400)->write('Please provide a proper ruid. It should be generated from other API calls');
+    }else{
+        //execute a query to get all the results associated with this ruid
+        $json_results = ruid2json($ruid);
+        return $response->withStatus(200)->write(json_encode($json_results));
+    }
 });
 
 $app->run();
