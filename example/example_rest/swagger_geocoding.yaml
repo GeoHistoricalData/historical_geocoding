@@ -19,6 +19,46 @@ schemes:
 produces:
   - application/json
 paths:
+  /ruid2json:
+    get:
+      summary: Sending a random unique id (ruid) corresponding to stored geocoding results, returns the results as json
+      description: The user is expected to already have gecoded addresses using this API. The results are then stored in the server and are identified by a random unique id (ruid). Providing this ruid allow to get all the stored results.
+      operationId: ruid2json
+      produces:
+        - application/json
+        - text/html
+      parameters:
+        - name: ruid
+          in: query
+          description: random unique identifier, corresponding to result of adress previously geocoded. A valid ruid is 32 alphanumerical char.
+          required: true
+          type: string
+          default: "8683593885de8753af5e2c0232b813e1"
+      responses:
+        '200':
+          description: Stored geocoding result found, returning the candidates
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/adresse_result'
+          examples:
+            'application/json' :
+              rank: 1
+              input_adresse_query: "12 rue du temple, Paris;1860"
+              historical_name: "12, r. du temple"
+              normalised_name: "12 rue du temple, paris"
+              fuzzy_date: "[1887-01-01,1889-01-01)"
+              geom: "POINT(0,0)"
+              historical_source: "jacoubet_paris"
+              numerical_origin_process: "jacoubet_paris_number"
+              semantic_distance: 0.15
+              temporal_distance: 65
+              number_distance: 2
+              scale_distance: 0
+              spatial_distance: 0
+              aggregated_distance: 0.258
+              spatial_precision: 5
+              confidence_in_result: 1
   /:
     get:
       summary: Sending an adresse, date, and parameters, returns potential localisation candidates for this adresse, OR write the candidates in a dedicated table and returns a random unique id (ruid)
@@ -77,8 +117,10 @@ paths:
           examples:
             'application/json' :
               rank: 1
+              input_adresse_query: "12 rue du temple, Paris;1860"
               historical_name: "12, r. du temple"
               normalised_name: "12 rue du temple, paris"
+              fuzzy_date: "[1887-01-01,1889-01-01)"
               geom: "POINT(0,0)"
               historical_source: "jacoubet_paris"
               numerical_origin_process: "jacoubet_paris_number"
@@ -103,8 +145,10 @@ definitions:
     type: object
     required:
       - rank
+      - input_adresse_query
       - historical_name
       - normalised_name
+      - fuzzy_date
       - geom
       - historical_source
       - numerical_origin_process
@@ -123,11 +167,17 @@ definitions:
         format: int64
         minimum: 1
         maximum: 300
+      input_adresse_query:
+        description: this is the input address and date the user provided.
+        type: string
       historical_name:
         description: The found adress original name in the historical source. E.g. `12, R. du temple`
         type: string
       normalised_name:
         description: The found adress normalised name according to current standard. E.g. `12 rue du temple, Paris`
+        type: string
+      fuzzy_date:
+        description: The candidate address has this date (obtained from the relative historical source). Note that the date is a range of date
         type: string
       geom:
         description: geometry of the adress in WKT (Well Known Text). May be any geometry type (point, linestring, multi, geometry collection, etc.). E.g. `POINT(652697.7,6862479.6)`
@@ -138,6 +188,22 @@ definitions:
       numerical_origin_process:
         description: the adresse comes from a historical source that has been digitized with a given process. This is the short description, but full details are available in the doc. E.g `jacoubet_paris_numbers`
         type: string
+      aggregated_distance:
+        description: MAIN DISTANCE, aggregates all the distances following the user provided distance evaluation function. Smaller agregated_distance means the result is better. Here is an example of such distance function `'100*(semantic_distance) + 0.1 * temporal_distance + 10*number_distance + 0.001 * scale_distance +  0.0001 * spatial_distance'`. Note that a perfect result should be at `0` distance for a sucessful confidence evaluation
+        type: number
+        format: float
+        minimum: 0
+      spatial_precision:
+        description: Each adresse-result is associated with a spatial precision estimated based on precision of historical source and precision of the digitization process. Expressed in meter. e.g. `13` meters. You can display the result dilated (buffer) by this amount if you want to visually express the uncertainity in localisation.
+        type: number
+        format: float
+        minimum: 0
+      confidence_in_result:
+        description: between `0` (not confident at all) and `1` (fully confident) confidence in the proposed adresse. Confidence is based on a statistic clustering of results.
+        type: number
+        format: float 
+        minimum: 0
+        maximum: 1
       semantic_distance:
         description: how close semantically is the adresse to the adresse-query ? ( using trigram distance). Between `0` (totally similar e.g. `temple` and `TeMPLe`) and `1` (totally dissimilar). E.g. of real-life e.g. `rue des tanneurs` to `rue DES TANNERIES` is `0.296`
         type: number
@@ -164,19 +230,4 @@ definitions:
         type: number
         format: float
         minimum: 0
-      aggregated_distance:
-        description: MAIN DISTANCE, aggregates all the distances following the user provided distance evaluation function. Smaller agregated_distance means the result is better. Here is an example of such distance function `'100*(semantic_distance) + 0.1 * temporal_distance + 10*number_distance + 0.001 * scale_distance +  0.0001 * spatial_distance'`. Note that a perfect result should be at `0` distance for a sucessful confidence evaluation
-        type: number
-        format: float
-        minimum: 0
-      spatial_precision:
-        description: Each adresse-result is associated with a spatial precision estimated based on precision of historical source and precision of the digitization process. Expressed in meter. e.g. `13` meters. You can display the result dilated (buffer) by this amount if you want to visually express the uncertainity in localisation.
-        type: number
-        format: float
-        minimum: 0
-      confidence_in_result:
-        description: between `0` (not confident at all) and `1` (fully confident) confidence in the proposed adresse. Confidence is based on a statistic clustering of results.
-        type: number
-        format: float 
-        minimum: 0
-        maximum: 1
+

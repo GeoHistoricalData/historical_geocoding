@@ -712,7 +712,7 @@ margin-bottom: 20px;
     var defs = {}
     defs.adresse_result = {
   "type" : "object",
-  "required" : [ "aggregated_distance", "confidence_in_result", "geom", "historical_name", "historical_source", "normalised_name", "number_distance", "numerical_origin_process", "rank", "scale_distance", "semantic_distance", "spatial_distance", "spatial_precision", "temporal_distance" ],
+  "required" : [ "aggregated_distance", "confidence_in_result", "fuzzy_date", "geom", "historical_name", "historical_source", "input_adresse_query", "normalised_name", "number_distance", "numerical_origin_process", "rank", "scale_distance", "semantic_distance", "spatial_distance", "spatial_precision", "temporal_distance" ],
   "properties" : {
     "rank" : {
       "type" : "integer",
@@ -721,6 +721,10 @@ margin-bottom: 20px;
       "minimum" : 1,
       "maximum" : 300
     },
+    "input_adresse_query" : {
+      "type" : "string",
+      "description" : "this is the input address and date the user provided."
+    },
     "historical_name" : {
       "type" : "string",
       "description" : "The found adress original name in the historical source. E.g. `12, R. du temple`"
@@ -728,6 +732,10 @@ margin-bottom: 20px;
     "normalised_name" : {
       "type" : "string",
       "description" : "The found adress normalised name according to current standard. E.g. `12 rue du temple, Paris`"
+    },
+    "fuzzy_date" : {
+      "type" : "string",
+      "description" : "The candidate address has this date (obtained from the relative historical source). Note that the date is a range of date"
     },
     "geom" : {
       "type" : "string",
@@ -740,6 +748,25 @@ margin-bottom: 20px;
     "numerical_origin_process" : {
       "type" : "string",
       "description" : "the adresse comes from a historical source that has been digitized with a given process. This is the short description, but full details are available in the doc. E.g `jacoubet_paris_numbers`"
+    },
+    "aggregated_distance" : {
+      "type" : "number",
+      "format" : "float",
+      "description" : "MAIN DISTANCE, aggregates all the distances following the user provided distance evaluation function. Smaller agregated_distance means the result is better. Here is an example of such distance function `'100*(semantic_distance) + 0.1 * temporal_distance + 10*number_distance + 0.001 * scale_distance +  0.0001 * spatial_distance'`. Note that a perfect result should be at `0` distance for a sucessful confidence evaluation",
+      "minimum" : 0
+    },
+    "spatial_precision" : {
+      "type" : "number",
+      "format" : "float",
+      "description" : "Each adresse-result is associated with a spatial precision estimated based on precision of historical source and precision of the digitization process. Expressed in meter. e.g. `13` meters. You can display the result dilated (buffer) by this amount if you want to visually express the uncertainity in localisation.",
+      "minimum" : 0
+    },
+    "confidence_in_result" : {
+      "type" : "number",
+      "format" : "float",
+      "description" : "between `0` (not confident at all) and `1` (fully confident) confidence in the proposed adresse. Confidence is based on a statistic clustering of results.",
+      "minimum" : 0,
+      "maximum" : 1
     },
     "semantic_distance" : {
       "type" : "number",
@@ -771,25 +798,6 @@ margin-bottom: 20px;
       "format" : "float",
       "description" : "user can define an expected spatial position for the results by inputing a geometry (e.g. `POINT(652697.7,6862479.6)`). How spatially far are the actual results from this expected spatial position. This is usefull if you expect the result to be near to a neighbourhood for instance.",
       "minimum" : 0
-    },
-    "aggregated_distance" : {
-      "type" : "number",
-      "format" : "float",
-      "description" : "MAIN DISTANCE, aggregates all the distances following the user provided distance evaluation function. Smaller agregated_distance means the result is better. Here is an example of such distance function `'100*(semantic_distance) + 0.1 * temporal_distance + 10*number_distance + 0.001 * scale_distance +  0.0001 * spatial_distance'`. Note that a perfect result should be at `0` distance for a sucessful confidence evaluation",
-      "minimum" : 0
-    },
-    "spatial_precision" : {
-      "type" : "number",
-      "format" : "float",
-      "description" : "Each adresse-result is associated with a spatial precision estimated based on precision of historical source and precision of the digitization process. Expressed in meter. e.g. `13` meters. You can display the result dilated (buffer) by this amount if you want to visually express the uncertainity in localisation.",
-      "minimum" : 0
-    },
-    "confidence_in_result" : {
-      "type" : "number",
-      "format" : "float",
-      "description" : "between `0` (not confident at all) and `1` (fully confident) confidence in the proposed adresse. Confidence is based on a statistic clustering of results.",
-      "minimum" : 0,
-      "maximum" : 1
     }
   }
 };
@@ -812,6 +820,9 @@ margin-bottom: 20px;
                   <li class="nav-header" data-group="Default"><a href="#api-Default">API Methods - Default</a></li>
                     <li data-group="Default" data-name="geocodeAdresse" class="">
                       <a href="#api-Default-geocodeAdresse">geocodeAdresse</a>
+                    </li>
+                    <li data-group="Default" data-name="ruid2json" class="">
+                      <a href="#api-Default-ruid2json">ruid2json</a>
                     </li>
           </ul>
         </nav>
@@ -1256,8 +1267,10 @@ try {
   "examples" : {
     "application/json" : {
       "rank" : 1,
+      "input_adresse_query" : "12 rue du temple, Paris;1860",
       "historical_name" : "12, r. du temple",
       "normalised_name" : "12 rue du temple, paris",
+      "fuzzy_date" : "[1887-01-01,1889-01-01)",
       "geom" : "POINT(0,0)",
       "historical_source" : "jacoubet_paris",
       "numerical_origin_process" : "jacoubet_paris_number",
@@ -1293,7 +1306,7 @@ try {
                                   <input id='examples-Default-geocodeAdresse-schema-data' type='hidden' value=''></input>
                                 </div>
                                   <div class="tab-pane" id="examples-Default-geocodeAdresse-example">
-                                    <pre class="prettyprint"><code class="json">{rank&#x3D;1, historical_name&#x3D;12, r. du temple, normalised_name&#x3D;12 rue du temple, paris, geom&#x3D;POINT(0,0), historical_source&#x3D;jacoubet_paris, numerical_origin_process&#x3D;jacoubet_paris_number, semantic_distance&#x3D;0.15, temporal_distance&#x3D;65, number_distance&#x3D;2, scale_distance&#x3D;0, spatial_distance&#x3D;0, aggregated_distance&#x3D;0.258, spatial_precision&#x3D;5, confidence_in_result&#x3D;1}</code></pre>
+                                    <pre class="prettyprint"><code class="json">{rank&#x3D;1, input_adresse_query&#x3D;12 rue du temple, Paris;1860, historical_name&#x3D;12, r. du temple, normalised_name&#x3D;12 rue du temple, paris, fuzzy_date&#x3D;[1887-01-01,1889-01-01), geom&#x3D;POINT(0,0), historical_source&#x3D;jacoubet_paris, numerical_origin_process&#x3D;jacoubet_paris_number, semantic_distance&#x3D;0.15, temporal_distance&#x3D;65, number_distance&#x3D;2, scale_distance&#x3D;0, spatial_distance&#x3D;0, aggregated_distance&#x3D;0.258, spatial_precision&#x3D;5, confidence_in_result&#x3D;1}</code></pre>
                                   </div>
                               </div>
                             <h3> Status: 201 - Adresse candidates found, returning ruid for interactive editing. The ruid is use_precise_localisation if this one has 32 alphanumerical character. </h3>
@@ -1352,6 +1365,298 @@ try {
                         </article>
                       </div>
                       <hr>
+                    <div id="api-Default-ruid2json">
+                      <article id="api-Default-ruid2json-0" data-group="User" data-name="ruid2json" data-version="0">
+                        <div class="pull-left">
+                          <h1>ruid2json</h1>
+                          <p>Sending a random unique id (ruid) corresponding to stored geocoding results, returns the results as json</p>
+                        </div>
+                        <div class="pull-right"></div>
+                        <div class="clearfix"></div>
+                        <p></p>
+                        <p class="marked">The user is expected to already have gecoded addresses using this API. The results are then stored in the server and are identified by a random unique id (ruid). Providing this ruid allow to get all the stored results.</p>
+                        <p></p>
+                        <br />
+                        <pre class="prettyprint language-html prettyprinted" data-type="get"><code><span class="pln">/ruid2json</span></code></pre>
+                        <p>
+                          <h3>Usage and SDK Samples</h3>
+                        </p>
+                        <ul class="nav nav-tabs nav-tabs-examples">
+                          <li class="active"><a href="#examples-Default-ruid2json-0-curl">Curl</a></li>
+                          <li class=""><a href="#examples-Default-ruid2json-0-java">Java</a></li>
+                          <li class=""><a href="#examples-Default-ruid2json-0-android">Android</a></li>
+                          <!--<li class=""><a href="#examples-Default-ruid2json-0-groovy">Groovy</a></li>-->
+                          <li class=""><a href="#examples-Default-ruid2json-0-objc">Obj-C</a></li>
+                          <li class=""><a href="#examples-Default-ruid2json-0-javascript">JavaScript</a></li>
+                          <!--<li class=""><a href="#examples-Default-ruid2json-0-angular">Angular</a></li>-->
+                          <li class=""><a href="#examples-Default-ruid2json-0-csharp">C#</a></li>
+                          <li class=""><a href="#examples-Default-ruid2json-0-php">PHP</a></li>
+                        </ul>
+
+                        <div class="tab-content">
+                          <div class="tab-pane active" id="examples-Default-ruid2json-0-curl">
+                            <pre class="prettyprint"><code class="language-bsh">curl -X <span style="text-transform: uppercase;">get</span> "http://geohistoricaldata.org/geocoding/geocoding.php/ruid2json?ruid="</code></pre>
+                          </div>
+                          <div class="tab-pane" id="examples-Default-ruid2json-0-java">
+                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
+import io.swagger.client.auth.*;
+import io.swagger.client.model.*;
+import io.swagger.client.api.DefaultApi;
+
+import java.io.File;
+import java.util.*;
+
+public class DefaultApiExample {
+
+    public static void main(String[] args) {
+        
+        DefaultApi apiInstance = new DefaultApi();
+        String ruid = ruid_example; // String | random unique identifier, corresponding to result of adress previously geocoded. A valid ruid is 32 alphanumerical char.
+        try {
+            array[adresse_result] result = apiInstance.ruid2json(ruid);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling DefaultApi#ruid2json");
+            e.printStackTrace();
+        }
+    }
+}</code></pre>
+                          </div>
+
+                          <div class="tab-pane" id="examples-Default-ruid2json-0-android">
+                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.api.DefaultApi;
+
+public class DefaultApiExample {
+
+    public static void main(String[] args) {
+        DefaultApi apiInstance = new DefaultApi();
+        String ruid = ruid_example; // String | random unique identifier, corresponding to result of adress previously geocoded. A valid ruid is 32 alphanumerical char.
+        try {
+            array[adresse_result] result = apiInstance.ruid2json(ruid);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling DefaultApi#ruid2json");
+            e.printStackTrace();
+        }
+    }
+}</code></pre>
+                          </div>
+  <!--
+  <div class="tab-pane" id="examples-Default-ruid2json-0-groovy">
+  <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
+  </div> -->
+                            <div class="tab-pane" id="examples-Default-ruid2json-0-objc">
+                              <pre class="prettyprint"><code class="language-cpp">String *ruid = ruid_example; // random unique identifier, corresponding to result of adress previously geocoded. A valid ruid is 32 alphanumerical char. (default to 8683593885de8753af5e2c0232b813e1)
+
+DefaultApi *apiInstance = [[DefaultApi alloc] init];
+
+// Sending a random unique id (ruid) corresponding to stored geocoding results, returns the results as json
+[apiInstance ruid2jsonWith:ruid
+              completionHandler: ^(array[adresse_result] output, NSError* error) {
+                            if (output) {
+                                NSLog(@"%@", output);
+                            }
+                            if (error) {
+                                NSLog(@"Error: %@", error);
+                            }
+                        }];
+</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-ruid2json-0-javascript">
+                              <pre class="prettyprint"><code class="language-js">var HistoricalGeocoding = require('historical_geocoding');
+
+var api = new HistoricalGeocoding.DefaultApi()
+
+var ruid = ruid_example; // {String} random unique identifier, corresponding to result of adress previously geocoded. A valid ruid is 32 alphanumerical char.
+
+
+var callback = function(error, data, response) {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log('API called successfully. Returned data: ' + data);
+  }
+};
+api.ruid2json(ruid, callback);
+</code></pre>
+                            </div>
+
+                            <!--<div class="tab-pane" id="examples-Default-ruid2json-0-angular">
+              <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
+            </div>-->
+                            <div class="tab-pane" id="examples-Default-ruid2json-0-csharp">
+                              <pre class="prettyprint"><code class="language-cs">using System;
+using System.Diagnostics;
+using IO.Swagger.Api;
+using IO.Swagger.Client;
+using IO.Swagger.Model;
+
+namespace Example
+{
+    public class ruid2jsonExample
+    {
+        public void main()
+        {
+            
+            var apiInstance = new DefaultApi();
+            var ruid = ruid_example;  // String | random unique identifier, corresponding to result of adress previously geocoded. A valid ruid is 32 alphanumerical char. (default to 8683593885de8753af5e2c0232b813e1)
+
+            try
+            {
+                // Sending a random unique id (ruid) corresponding to stored geocoding results, returns the results as json
+                array[adresse_result] result = apiInstance.ruid2json(ruid);
+                Debug.WriteLine(result);
+            }
+            catch (Exception e)
+            {
+                Debug.Print("Exception when calling DefaultApi.ruid2json: " + e.Message );
+            }
+        }
+    }
+}</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-ruid2json-0-php">
+                              <pre class="prettyprint"><code class="language-php"><&#63;php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$api_instance = new Swagger\Client\Api\DefaultApi();
+$ruid = ruid_example; // String | random unique identifier, corresponding to result of adress previously geocoded. A valid ruid is 32 alphanumerical char.
+
+try {
+    $result = $api_instance->ruid2json($ruid);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->ruid2json: ', $e->getMessage(), PHP_EOL;
+}
+?></code></pre>
+                            </div>
+                          </div>
+
+                          <h2>Parameters</h2>
+
+
+
+
+
+                            <div class="methodsubtabletitle">Query parameters</div>
+                            <table id="methodsubtable">
+                              <tr>
+                                <th width="150px">Name</th>
+                                <th>Description</th>
+                              </tr>
+                                <tr><td style="width:150px;">ruid*</td>
+<td>
+
+
+<script>
+												$(document).ready(function() {
+													var schemaWrapper = {
+  "name" : "ruid",
+  "in" : "query",
+  "description" : "random unique identifier, corresponding to result of adress previously geocoded. A valid ruid is 32 alphanumerical char.",
+  "required" : true,
+  "type" : "string",
+  "default" : "8683593885de8753af5e2c0232b813e1"
+};
+													var schema = schemaWrapper;
+
+
+
+
+													var view = new JSONSchemaView(schema,1);
+													var result = $('#d2e199_ruid2json_ruid');
+													result.empty();
+													result.append(view.render());
+
+
+
+
+
+												});
+												</script>
+												<div id="d2e199_ruid2json_ruid"></div>
+</td>
+</tr>
+
+                            </table>
+
+                          <h2>Responses</h2>
+                            <h3> Status: 200 - Stored geocoding result found, returning the candidates </h3>
+
+                              <ul class="nav nav-tabs nav-tabs-examples" >
+                                <li class="active">
+                                  <a href="#examples-Default-ruid2json-schema">Schema</a>
+                                </li>
+
+                                  <li class="">
+                                    <a href="#examples-Default-ruid2json-example">Response Example</a>
+                                  </li>
+                              </ul>
+
+                              <div class="tab-content" style='margin-bottom: 10px;'>
+                                <div class="tab-pane active" id="examples-Default-ruid2json-schema">
+                                  <div id='examples-Default-ruid2json-schema-200' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+
+                                    <script>
+                                      $(document).ready(function() {
+                                        var schemaWrapper = {
+  "description" : "Stored geocoding result found, returning the candidates",
+  "schema" : {
+    "type" : "array",
+    "items" : {
+      "$ref" : "#/definitions/adresse_result"
+    }
+  },
+  "examples" : {
+    "application/json" : {
+      "rank" : 1,
+      "input_adresse_query" : "12 rue du temple, Paris;1860",
+      "historical_name" : "12, r. du temple",
+      "normalised_name" : "12 rue du temple, paris",
+      "fuzzy_date" : "[1887-01-01,1889-01-01)",
+      "geom" : "POINT(0,0)",
+      "historical_source" : "jacoubet_paris",
+      "numerical_origin_process" : "jacoubet_paris_number",
+      "semantic_distance" : 0.15,
+      "temporal_distance" : 65,
+      "number_distance" : 2,
+      "scale_distance" : 0,
+      "spatial_distance" : 0,
+      "aggregated_distance" : 0.258,
+      "spatial_precision" : 5,
+      "confidence_in_result" : 1
+    }
+  }
+};
+                                        var schema = schemaWrapper.schema;
+                                        schemaWrapper.definitions = defs;
+                                        //console.log(JSON.stringify(schema))
+                                        JsonRefs.resolveRefs(schemaWrapper, {
+                                            "depth": 3,
+                                            "resolveRemoteRefs": false,
+                                            "resolveFileRefs": false
+                                        }, function(err, resolved, metadata) {
+                                          //console.log(JSON.stringify(resolved));
+                                          var view = new JSONSchemaView(resolved.schema, 3);
+                                          $('#examples-Default-ruid2json-schema-data').val(JSON.stringify(resolved.schema));
+                                          var result = $('#examples-Default-ruid2json-schema-200');
+                                          result.empty();
+                                          result.append(view.render());
+                                        });
+                                      });
+                                    </script>
+                                  </div>
+                                  <input id='examples-Default-ruid2json-schema-data' type='hidden' value=''></input>
+                                </div>
+                                  <div class="tab-pane" id="examples-Default-ruid2json-example">
+                                    <pre class="prettyprint"><code class="json">{rank&#x3D;1, input_adresse_query&#x3D;12 rue du temple, Paris;1860, historical_name&#x3D;12, r. du temple, normalised_name&#x3D;12 rue du temple, paris, fuzzy_date&#x3D;[1887-01-01,1889-01-01), geom&#x3D;POINT(0,0), historical_source&#x3D;jacoubet_paris, numerical_origin_process&#x3D;jacoubet_paris_number, semantic_distance&#x3D;0.15, temporal_distance&#x3D;65, number_distance&#x3D;2, scale_distance&#x3D;0, spatial_distance&#x3D;0, aggregated_distance&#x3D;0.258, spatial_precision&#x3D;5, confidence_in_result&#x3D;1}</code></pre>
+                                  </div>
+                              </div>
+                        </article>
+                      </div>
+                      <hr>
                   </section>
           </div>
           <div id="footer">
@@ -1365,7 +1670,7 @@ try {
           </div>
           <div id="generator">
             <div class="content">
-              Generated 2017-02-14T15:44:29.803Z
+              Generated 2017-02-16T15:59:44.014Z
             </div>
           </div>
       </div>

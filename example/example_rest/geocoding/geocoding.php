@@ -75,15 +75,17 @@ function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisatio
 	if ($interactive_return == "0" or is_null($interactive_return) ) {
 		/*prepare query and send it*/
 		$query = " 
-		SELECT rank::text, historical_name::text, normalised_name::text
+		SELECT rank::text, 
+            input_adresse_query
+            ,historical_name::text, normalised_name::text
                         , sfti2daterange(COALESCE(f.specific_fuzzy_date,hs.default_fuzzy_date)) AS fuzzy_date
-			, CASE WHEN ST_NumGeometries(geom2) =1 THEN ST_AsText(ST_GeometryN(geom2,1)) ELSE ST_AsText(geom2) END AS geom
+            , CASE WHEN ST_NumGeometries(geom2) =1 THEN ST_AsText(ST_GeometryN(geom2,1)) ELSE ST_AsText(geom2) END AS geom
 			, historical_source::text, numerical_origin_process::text
-			, historical_geocoding.round(semantic_distance::float,3 )as semantic_distance , historical_geocoding.round(temporal_distance::float,3) AS temporal_distance
-			, historical_geocoding.round(number_distance::float,3) number_distance, historical_geocoding.round(scale_distance::float,3) scale_distance, historical_geocoding.round(spatial_distance::float,3) spatial_distance 
-			, historical_geocoding.round(aggregated_distance::float,6) aggregated_distance
+            , historical_geocoding.round(aggregated_distance::float,6) aggregated_distance
 			, historical_geocoding.round(spatial_precision::float,2) spatial_precision
 			, historical_geocoding.round(confidence_in_result::float,3) confidence_in_result
+			, historical_geocoding.round(semantic_distance::float,3 )as semantic_distance , historical_geocoding.round(temporal_distance::float,3) AS temporal_distance
+			, historical_geocoding.round(number_distance::float,3) number_distance, historical_geocoding.round(scale_distance::float,3) scale_distance, historical_geocoding.round(spatial_distance::float,3) spatial_distance  
 		FROM historical_geocoding.geocode_name_foolproof(
 		query_adress:=$1,
 		query_date:= sfti_makesfti($2::integer) ,
