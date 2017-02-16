@@ -156,7 +156,7 @@ function ruid2json($ruid){
             , semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance
             ,ruid
         FROM geocoding_edit.geocoding_results
-        WHERE ruid = quote_literal($1);" ;
+        WHERE ruid = $1;" ;
     $result = pg_query_params($dbconn, $query, array($ruid));
     if (!$result) {
       echo "no result foudn for this ruid\n";
