@@ -75,8 +75,8 @@ function retrieve_results_from_db($adresse,$date,$n_results,$precise_localisatio
 	if ($interactive_return == "0" or is_null($interactive_return) ) {
 		/*prepare query and send it*/
 		$query = " 
-		SELECT rank::text, 
-            input_adresse_query
+		SELECT rank::text 
+            ,$1||';'||$2 AS input_adresse_query
             ,historical_name::text, normalised_name::text
                         , sfti2daterange(COALESCE(f.specific_fuzzy_date,hs.default_fuzzy_date)) AS fuzzy_date
             , CASE WHEN ST_NumGeometries(geom2) =1 THEN ST_AsText(ST_GeometryN(geom2,1)) ELSE ST_AsText(geom2) END AS geom
