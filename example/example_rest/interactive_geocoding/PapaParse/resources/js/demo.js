@@ -47,6 +47,41 @@ $(function()
 		$('#submit').text("Unparse");
 		inputType = "json";
 	});
+	$('#view_result_in_tab').click(function()
+	{
+          //open a new tab with leaflet and appropriate ruid set
+          //dislaying 
+          url = "https://www.geohistoricaldata.org/interactive_geocoding/Leaflet-WFST/examples/geocoding.html?ruid="+ruid;
+          win = window.open(url, '_blank'); 
+          if (win) {
+             //Browser has allowed it to be opened
+            win.focus();
+          } else {
+            //Browser has blocked it
+            alert('Please allow popups for this website');
+          } 
+          
+	});
+	$('#save_result_in_csv').click(function(){
+           //getting the results from the rest api serveur, saving it as csv
+           getGeocodingJSONFromBase();
+           textjson = ruid2json_result
+           console.log("textjson",textjson);
+           if(!textjson){
+             alert("error : could'nt find results associated with ths ruid: "+ruid);
+           }else{
+             var text = Papa.unparse(textjson,{
+              quotes: true,
+              quoteChar: '"',
+              delimiter: "|",
+	      header: true,
+	      newline: "\r\n"
+             });
+             var filename = $("#save_result_in_csv_text").val();
+             var blob = new Blob([text], {type: "text/plain;charset=utf-8"});
+             saveAs(blob, filename+".csv");
+           }
+	});
 
 var l = $('#tab-local');
 l.click();
@@ -208,7 +243,7 @@ function buildConfig()
 }
 var ruid = "1" ; 
 var shall_we_wait = false;  
-var current_result_index = 0; 
+var ruid2json_result=""; 
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -218,6 +253,39 @@ function wait(){
         sleep(100);
     };
 }
+
+var getGeocodingJSONFromBase = function(){
+    /** call geocoding server API to output all results in JSON, then convert it to csv
+    */
+    var base_path = "https://www.geohistoricaldata.org/geocoding/geocoding.php/ruid2json"
+    var dataString = encodeURI('ruid='+ruid);
+    test = $.ajax({
+      type: "GET",
+      async: false,
+      timeout: 10000,
+      url: base_path+"?"+dataString,
+      dataType: 'JSONP',
+      success: function(data){
+        console.log("successfully got results associated to ruid") ;
+        return data;
+      },
+      error: function(jqXHR, textStatus, errorThrown){
+        if(jqXHR.status==200){
+            console.log("here is the returned stuff",jqXHR);
+            ruid2json_result= jqXHR.responseText;
+            return;
+        }else{//ohoh : received a strange return code
+          console.log("error in trying to get results associated to ruid : ",ruid);
+          alert("error : coulnd't get already geocoded results associated to ruid: "+ruid);
+        }
+      }
+    });
+    return;
+}
+
+
+
+
 
 var geocodeOneAdress = function(address, address_date ){
     /** @short Given one line of CSV, prepare an URL and send it to geocoder service
@@ -235,7 +303,7 @@ var geocodeOneAdress = function(address, address_date ){
 
     test = $.ajax({
       type: "GET",
-      async: true,
+      async: false,
       cache: false,
       timeout: 5000,
       url: base_path+"?"+dataString,//+"&callback=?",
@@ -311,11 +379,11 @@ function completeFn(results)
         address = results.data[i].address;
         console.log("add and date : ",address, " ", address_date);
         if(address_date<0 || address_date > 2100){
-            alert("you provided an ivalid date :'",dat.address_date,"'"," for address:",address," around line ",i) ;
+            alert("you provided an ivalid date :'",address_date,"'"," for address:",address," around line ",i) ;
             skip_line = true;
         }
         if(!address || !address_date){
-            alert("you provided an ivalid date or address :'",dat.address_date,"'"," for address:",address," around line ",i) ;
+            alert("you provided an ivalid date or address :'",address_date,"'"," for address:",address," around line ",i) ;
             skip_line = true;
         }
         if(skip_line==false){
@@ -325,8 +393,16 @@ function completeFn(results)
         }
         
         
-    }
+    }//end loop on all results
+    //display ruid for user to access its results
+    //open a new tab with ruid for user to edit their results
+    //alert("your ruid is :'"+ruid+"' , go to page "+"https://www.geohistoricaldata.org/interactive_geocoding/Leaflet-WFST/examples/geocoding.html"+" and copy your ruid here");
     
+    // putting the ruid in the form for display
+    document.getElementById("displayRuid").hidden=false;
+    document.getElementById("textRuid").value=ruid;
+
+
 	// icky hack
 	setTimeout(enableButton, 100);
 }

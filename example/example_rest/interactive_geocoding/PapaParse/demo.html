@@ -6,6 +6,7 @@
 		<meta name="viewport" content="width=device-width, maximum-scale=1.0">
 		<meta name="theme-color" content="#ffffff">
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js"></script>
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Arvo|Source+Sans+Pro:400,400italic,700|Lato:300,400">
 		<link rel="stylesheet" href="./resources/css/unsemantic.css">
 		<link rel="stylesheet" href="./resources/css/common.css">
@@ -57,6 +58,21 @@
             <h4>Your CSV file must have 2 columns and the first line must be the column name : <br>
                 Column 1 : "address" , example : "12 rue du temple, Paris"  <br>
                 Column 2 : "address_date", year of your adresse. For instance "1875".</h4>
+                        <div class="display_ruid" hidden=true id="displayRuid" >
+                          <form id="form_ruid">
+                            <fieldset id="fieldset_ruid" disabled=true>
+                            <input type="text" id="textRuid" value="1"> your result "ruid"<br>
+                            </fieldset>
+                          </form>
+                        <br>
+                         View/edit your results on a map in  a new browser tab:
+                          <input id="view_result_in_tab" type="button" value="View/edit your results on a map" enabled/>
+                          <br>
+                          <br> Save your results as CSV (you can edit in browser the results first): 
+                                 <input id="save_result_in_csv_text" type="text" placeholder ="enter filename here" />
+                                 <input id="save_result_in_csv" type="button" value="Save result as CSV" enabled/>
+                        <br>
+                        </div>
 			<div class="tabs">
 				<div class="tab" id="tab-string">String</div>
 				<div class="tab active" id="tab-local">Local File(s)</div>
