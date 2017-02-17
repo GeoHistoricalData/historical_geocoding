@@ -121,7 +121,7 @@
 <script src="lib/L.Control.Sidebar.js"></script>
 <script src="../dist/Leaflet-WFST.src.js"></script>
 <script src="./geocoding_spinner.js"></script>
-<script src="../dist/leaflet-tilelayer-wmts.js"></script>
+<!--<script src="../dist/leaflet-tilelayer-wmts.js"></script>-->
 <script src="./geocoding_form.js"></script>
 <script>
  // Note : spinner is an annimation that plays while loading
@@ -150,7 +150,7 @@ function round(value, exp) {//found on internet
     ruid: "0",
     ruid_short: function() {return String(this.ruid).substring(0,12);}
   };
-  var map = L.map('map').setView([0, 0], 2);
+  var map = L.map('map').setView([48.853555,2.348133], 14);
 
   var disableMapInteractions = function () {
     map.dragging.disable();
