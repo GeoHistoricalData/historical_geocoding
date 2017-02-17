@@ -32,22 +32,34 @@
 <div id="sidebar_adress">
   <h1 id="title"> Geocoding historical adresses</h1>
   <form id="formoid" action="formoid" method="post" >
-  <label for="Adresse">Adresse :</label> 
+  <label for="user_adresse">Adresse :</label> 
   <input type="textarea" id="user_adresse" placeholder="ex : 12 rue du temple, Paris" name="user_adresse" value="12 rue du temple, Paris" /> <br>
-  <label for="Date">Date :</label>
+  <label for="user_date">Date :</label>
   <input type="number" id="user_date" placeholder="ex : 1875" name="user_date" min="1800" max="2144" value="1860"/> <br>
-  <label for="Date">Maximum number of results :</label>
+  <label for="user_number_of_result">Maximum number of results :</label>
   <input type="number" id="user_number_of_result" placeholder="ex : 4" name="user_number_of_result" min="1" max="300" value="1"/><br>
-  <label for="Date">Do you want precise (house number) or rough (street, neighboourhood, city) localisation</label>
+  <label for="user_use_precise_localisation">Do you want precise (house number) or rough (street, neighboourhood, city) localisation</label>
   <input type="hidden" value='0' name="user_use_precise_localisation"/> <br>
+  <label for="user_use_precise_localisation"> use precise lcoalisation </label>
   <input type="checkbox" id="user_use_precise_localisation" name="user_use_precise_localisation" value="1" checked/> <br>
+  <label for="geocodeButton"> Geocode! </label>
   <input id="geocodeButton" type="button" value="Geocode!" enabled/>
   </form>
-    <h2 id="title">(OPTIONAL) Editing already geocoded adresses</h2>
+  <br>
+  <br>
+  <br>
+    <h4 id="title">(OPTIONAL) Editing already geocoded adresses</h4>
   <form id="formoid2" action="formoid2" method="post" >
-  <label for="already provided ruid"> RUID : Permanent key to your geocoding results:</label> 
+  <label for="user_provided_ruid"> RUID : Permanent key to your geocoding results:</label> 
   <input type="textarea" id="user_provided_ruid" name="user_provided_ruid" placeholder="0" value="0" size="32"/> <br> 
   <input id="geocodeButton2" type="button" value="Display already Geocoded adresses" enabled/>
+  <br>
+  <br>
+  <br>
+  <h4 id="title">(OPTIONAL) export results as csv</h4>
+  <form id="formoid3" action="formoid3" method="post" >
+  <label for="gotToCSV"> Export results associated to curretnruid as CSV file</label>  
+  <input id="geocodeButton3" type="button" value="Export results as csv" enabled/>
   </form>
 </div>
 
@@ -233,6 +245,28 @@ function round(value, exp) {//found on internet
         });
   };
   
+    sidebar_adress._onBtnClick3 = function () {
+      //called when the user click on  button to export results as CSV 
+      
+      if(String(document.getElementById('user_provided_ruid').value).length != 32 ){
+          alert("This button is toexport as CSV file already geocoded results, please provide the valid ruid (32 char long)");
+          return;
+      };
+      
+      //user provided a decent ruid (we think), we open a new tab with option to export to csv
+      geocoding.ruid = document.getElementById('user_provided_ruid').value ; 
+      url = "https://www.geohistoricaldata.org/interactive_geocoding/PapaParse/geocode_csv_file.html?ruid="+geocoding.ruid;
+          win = window.open(url, '_blank'); 
+          if (win) {
+             //Browser has allowed it to be opened
+            win.focus();
+          } else {
+            //Browser has blocked it
+            alert('Please allow popups for this website');
+          } 
+  };
+  
+  
   
   sidebar_adress._onBtnClick2 = function () {
       //called when the user click on  button to load already geocoded results
@@ -302,6 +336,8 @@ function round(value, exp) {//found on internet
   L.DomEvent.on(geocodeBtn, 'click', sidebar_adress._onBtnClick);
   var geocodeBtn2 = document.getElementById('geocodeButton2')
   L.DomEvent.on(geocodeBtn2, 'click', sidebar_adress._onBtnClick2);
+  var geocodeBtn3 = document.getElementById('geocodeButton3')
+  L.DomEvent.on(geocodeBtn3, 'click', sidebar_adress._onBtnClick3);
   spinner.stop();
 
   var sidebar = L.control.sidebar('sidebar', {
