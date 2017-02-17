@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Jumbotron Template for Bootstrap</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <link href="./css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="jumbotron.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="./assets/js/ie-emulation-modes-warning.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Historical Geocoding</a>
+        </div>
+        
+      </div>
+    </nav>
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+        <h1>Historical geocoding: the tools</h1>
+        <p> We propose tools for historical geocoding, prepared with data for Paris city between 1800 and now. </p>
+        <p> If you want to add geocoding capabilities for other cities/time period, contact us, it's very easy to do. </p>
+        <br>
+        <p> Important : <li >The edit you do are saved and shared!</li>
+                        <li >All your results are stored in the server and associated to a Random Unique IDentifier (RUID).</li>
+                        <li > Keep your RUID somewhere if you want to access your results from anywhere and anytime</li>
+        </p>
+        <p><a class="btn btn-primary btn-lg" href="https://github.com/GeoHistoricalData/historical_geocoding" role="button">the Github Project &raquo;</a></p>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Example row of columns -->
+      <div class="row">
+        <div class="col-md-4">
+          <h2>REST API</h2>
+          <p>For an automatic geocoding, you can use the REST geocoding API!</p>
+          <p>You can easily test it thanks to a web page with ad-hoc form</p>
+          <p><a class="btn btn-default" href="https://www.geohistoricaldata.org/geocoding/" role="button">Form for REST API &raquo;</a></p>
+        </div>
+        <div class="col-md-4">
+          <h2>Map</h2>
+          <p>You can geocode, see results, and edit results on our web mapping page</p>
+          <p><a class="btn btn-default" href="https://www.geohistoricaldata.org/interactive_geocoding/Leaflet-WFST/examples/geocoding.html" role="button">Map: display and edit &raquo;</a></p>
+       </div>
+        <div class="col-md-4">
+          <h2>Batch geocoding</h2>
+          <p>You can geocode many addresses in one go using our batch geocoding page. </p>
+          <p>You can provide your adresses and date as CSV file, geocode it, then display it in map!</p>
+          <p>This page also allows you to save your geocoding results as a text file.</p>
+          <p><a class="btn btn-default" href="https://www.geohistoricaldata.org/interactive_geocoding/PapaParse/geocode_csv_file.html" role="button">Batch geocoding, loading and saving &raquo;</a></p>
+        </div>
+      </div>
+
+      <hr>
+
+      <footer>
+        <p>&copy; Copyright 2017 IGN</p>
+      </footer>
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+    <script src="../../dist/js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
+  </body>
+</html>
