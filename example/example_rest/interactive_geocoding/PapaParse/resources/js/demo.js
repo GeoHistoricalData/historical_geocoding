@@ -64,6 +64,8 @@ $(function()
 	});
 	$('#save_result_in_csv').click(function(){
            //getting the results from the rest api serveur, saving it as csv
+           //updating ruid from the text field, if user inputted something
+           ruid = document.getElementById('textRuid').value ; 
            getGeocodingJSONFromBase();
            textjson = ruid2json_result
            console.log("textjson",textjson);
@@ -442,4 +444,18 @@ function now()
 	return typeof window.performance !== 'undefined'
 			? window.performance.now()
 			: 0;
+}
+
+
+
+
+window.onload = function(){
+var urlParams = new URLSearchParams(window.location.search);
+if(urlParams.has('ruid') && String(urlParams.get('ruid')).length==32){
+  ruid = urlParams.get('ruid');
+  document.getElementById("textRuid").value = urlParams.get('ruid');
+  //displayng button
+  document.getElementById("displayRuid").hidden = false ; 
+  //simulating click on button
+}
 }
