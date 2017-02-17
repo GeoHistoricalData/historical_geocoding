@@ -5,15 +5,16 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, maximum-scale=1.0">
 		<meta name="theme-color" content="#ffffff">
-		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
-		<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Arvo|Source+Sans+Pro:400,400italic,700|Lato:300,400">
-		<link rel="stylesheet" href="/resources/css/unsemantic.css">
-		<link rel="stylesheet" href="/resources/css/common.css">
-		<link rel="stylesheet" href="/resources/css/demo.css">
-		<script src="/resources/js/jquery.min.js"></script>
-		<script src="/resources/js/common.js"></script>
-		<script src="/resources/js/papaparse.js"></script>
-		<script src="/resources/js/demo.js"></script>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js"></script>
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Arvo|Source+Sans+Pro:400,400italic,700|Lato:300,400">
+		<link rel="stylesheet" href="./resources/css/unsemantic.css">
+		<link rel="stylesheet" href="./resources/css/common.css">
+		<link rel="stylesheet" href="./resources/css/demo.css">
+		<script src="./resources/js/jquery.min.js"></script>
+		<script src="./resources/js/common.js"></script>
+		<script src="./resources/js/papaparse.js"></script>
+		<script src="./resources/js/geocode_csv_file.js"></script>
 	</head>
 	<body>
 
@@ -53,11 +54,33 @@
 			</header>
 
 
-			<h1>Choose a Demo</h1>
+			<h1>Enter your CSV file to be geocoded</h1>
+            <h4>Your CSV file must have 2 columns and the first line must be the column name : <br>
+                Column 1 : "address" , example : "12 rue du temple, Paris"  <br>
+                Column 2 : "address_date", year of your adresse. For instance "1875".</h4>
+                        <div id="editRuid">
+                        <form id="form_ruid" > 
+                            <input type="text" id="textRuid" value="1"> your result "ruid"<br> 
+                          </form>
+                        </div>
+                        <div id="pbarDiv" hidden=true>
+                          your data is being geocoded: about 200ms / address: 
+                        </div>
 
+                        <div class="display_ruid" hidden=true id="displayRuid" >
+                          
+                        <br>
+                         View/edit your results on a map in  a new browser tab:
+                          <input id="view_result_in_tab" type="button" value="View/edit your results on a map" enabled/>
+                          <br>
+                          <br> Save your results as CSV (you can edit in browser the results first): 
+                                 <input id="save_result_in_csv_text" type="text" placeholder ="enter filename here" />
+                                 <input id="save_result_in_csv" type="button" value="Save result as CSV" enabled/>
+                        <br>
+                        </div>
 			<div class="tabs">
-				<div class="tab active" id="tab-string">String</div>
-				<div class="tab" id="tab-local">Local File(s)</div>
+				<div class="tab" id="tab-string">String</div>
+				<div class="tab active" id="tab-local">Local File(s)</div>
 				<div class="tab" id="tab-remote">Remote File</div>
 				<div class="tab" id="tab-unparse">JSON to CSV</div>
 			</div>
@@ -76,7 +99,7 @@
 					</label>
 
 					<label>
-						<input type="checkbox" id="header"> Header row
+						<input type="checkbox" id="header" checked="true"> Header row
 						<dfn>Keys data by field name rather than an array.</dfn>
 					</label>
 
@@ -86,7 +109,7 @@
 					</label>
 
 					<label>
-						<input type="checkbox" id="skipEmptyLines"> Skip empty lines
+						<input type="checkbox" id="skipEmptyLines" checked="true"> Skip empty lines
 						<dfn>By default, empty lines are parsed; check to skip.</dfn>
 					</label>
 				</div>
@@ -117,11 +140,9 @@
 
 					<div class="grid-66 pull-33">
 						<div class="input-area" id="input-string">
-							<textarea id="input" placeholder="String input">Column 1,Column 2,Column 3,Column 4
-1-1,1-2,1-3,1-4
-2-1,2-2,2-3,2-4
-3-1,3-2,3-3,3-4
-4,5,6,7</textarea>
+							<textarea id="input" placeholder="String input">address|address_date
+12 rue du temple, paris|1856
+20 rue du temple, Paris|1868</textarea>
 						</div>
 						<div class="input-area" id="input-local">
 							
