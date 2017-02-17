@@ -106,6 +106,7 @@ l.click();
 		if ($(this).prop('disabled') == "true")
 			return;
 
+                document.getElementById("pbarDiv").hidden=false;
 		stepped = 0;
 		rowCount = 0;
 		errorCount = 0;
@@ -244,6 +245,8 @@ function buildConfig()
 var ruid = "1" ; 
 var shall_we_wait = false;  
 var ruid2json_result=""; 
+var totalNResults = 1;
+var currentNResults = 0;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -253,7 +256,19 @@ function wait(){
         sleep(100);
     };
 }
+/*
+setInterval(function(){
+  updateProgressBar();
+},2000);
 
+var updateProgressBar = function(){     
+              var ava = document.getElementById("pbar");
+              var div = totalNResults <=1? totalNResults :totalNResults-1;
+              document.getElementById("pbar").value = Math.round(currentNResults/div *100) ; 
+              //alert("saving the results as csvi in ",filename);
+              document.getElementById("pbarPer").innerHTML = ava.value + "%";
+}
+*/
 var getGeocodingJSONFromBase = function(){
     /** call geocoding server API to output all results in JSON, then convert it to csv
     */
@@ -372,7 +387,9 @@ function completeFn(results)
         alert("error : your csv data must contain a column 'address' and a column 'address_date'") ;
     } 
     skip_line = false ; 
+    totalNResults =  results.data.length;
     for (var i = 0; i < results.data.length; i++) { 
+        currentNResults=i ;
         skip_line=false ;
         //check quality of input date
         address_date = parseInt(results.data[i].address_date); 
@@ -398,6 +415,7 @@ function completeFn(results)
     //open a new tab with ruid for user to edit their results
     //alert("your ruid is :'"+ruid+"' , go to page "+"https://www.geohistoricaldata.org/interactive_geocoding/Leaflet-WFST/examples/geocoding.html"+" and copy your ruid here");
     
+    document.getElementById("pbarDiv").hidden=true;
     // putting the ruid in the form for display
     document.getElementById("displayRuid").hidden=false;
     document.getElementById("textRuid").value=ruid;
