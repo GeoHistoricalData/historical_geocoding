@@ -58,17 +58,19 @@
             <h4>Your CSV file must have 2 columns and the first line must be the column name : <br>
                 Column 1 : "address" , example : "12 rue du temple, Paris"  <br>
                 Column 2 : "address_date", year of your adresse. For instance "1875".</h4>
-                        
+                        <div>
+                        <form id="form_ruid">
+                            <fieldset id="fieldset_ruid" disabled=false>
+                            <input type="text" id="textRuid" value="1"> your result "ruid"<br>
+                            </fieldset>
+                          </form>
+                        </div>
                         <div id="pbarDiv" hidden=true>
                           your data is being geocoded: about 200ms / address: 
                         </div>
 
                         <div class="display_ruid" hidden=true id="displayRuid" >
-                          <form id="form_ruid">
-                            <fieldset id="fieldset_ruid" disabled=true>
-                            <input type="text" id="textRuid" value="1"> your result "ruid"<br>
-                            </fieldset>
-                          </form>
+                          
                         <br>
                          View/edit your results on a map in  a new browser tab:
                           <input id="view_result_in_tab" type="button" value="View/edit your results on a map" enabled/>
