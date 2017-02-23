@@ -31,7 +31,7 @@ WITH (
   OIDS=FALSE
 );
 
-TRUNCATE geocoding_edit.geocoding_results ; 
+TRUNCATE geocoding_edit.geocoding_results CASCADE; 
 INSERT INTO geocoding_edit.geocoding_results
 SELECT row_number() over() as gid, '12 rue temple, paris; 1872',rank, historical_name, normalised_name
 	, sfti2daterange(COALESCE(f.specific_fuzzy_date,hs.default_fuzzy_date)) AS fuzzy_date--fuzzy date
@@ -65,6 +65,7 @@ FROM geocoding_edit.geocoding_results ;
 
 
 -- creating a view, necessary as a wrapper for trigger, allow to avoid having trigger directly on the base table, and ths separate edit coming from user and edit coming from refresh
+-- TRUNCATE geocoding_edit.user_edit_added_to_geocoding; 
 TRUNCATE geocoding_edit.geocoding_results_v ; 
 DROP VIEW IF EXISTS geocoding_edit.geocoding_results_v ;  
 CREATE VIEW geocoding_edit.geocoding_results_v AS 
@@ -119,7 +120,7 @@ CREATE TABLE geocoding_edit.user_edit_added_to_geocoding(
 		, input_adresse_query text
 	) INHERITS (historical_geocoding.precise_localisation) ; 
 SELECT geohistorical_object.register_geohistorical_object_table( 'geocoding_edit', 'user_edit_added_to_geocoding'::text) ;
-
+TRUNCATE geocoding_edit.user_edit_added_to_geocoding ; 
 CREATE INDEX ON geocoding_edit.user_edit_added_to_geocoding (ruid) ; 
 
 SELECT *
@@ -266,7 +267,21 @@ WHERE  ruid ILIKE '0a126da88%';
 
 SELECT st_astext(geom), *
 FROM geocoding_edit.geocoding_results  
-WHERE ruid ILIKE 'bd11ece9ce5324ed2a75e74e257dc3b0%';   
+WHERE ruid ILIKE '8683593885de8753af5e2c0232b813e1%';   
+
+SELECT  gid, 
+	input_adresse_query
+	, rank, historical_name, normalised_name
+	, fuzzy_date::text
+	, ST_AsText(geom) AS geom
+	, historical_source, numerical_origin_process
+	, aggregated_distance
+	, spatial_precision, confidence_in_result 
+	, semantic_distance,  temporal_distance, number_distance, scale_distance,spatial_distance
+	,ruid
+FROM geocoding_edit.geocoding_results
+WHERE ruid = '92f76ecc64bf3b7967da5c8b88dc32a8';   
+
 
  
 /*
