@@ -113,7 +113,7 @@ RETURNS table(rank int,
 				, COALESCE( (sfti_distance_asym(COALESCE(rl.specific_fuzzy_date,hs.default_fuzzy_date), $2) ).fuzzy_distance,0) AS temporal_distance
 				, CAST( geohistorical_object.json_spatial_precision(hs.default_spatial_precision, ''number'')+geohistorical_object.json_spatial_precision(hs2.default_spatial_precision, ''number'') AS float) AS def_spatial_precision
 				, COALESCE(rl.specific_spatial_precision, def_spatial_precision) AS spatial_precision
-				, least( abs(sqrt(st_area(geom))  - lower($3)),abs(sqrt(st_area(geom)) - upper($3))) AS scale_distance
+				, least( abs(sqrt(st_area(ST_Buffer(geom,def_spatial_precision)))  - lower($3)),abs(sqrt(st_area(ST_Buffer(geom,def_spatial_precision))) - upper($3))) AS scale_distance
 				, COALESCE(ST_Distance($4::geometry, rl.geom),0) AS spatial_distance
 				, historical_geocoding.extract_building_number($1) AS house_number_i
 				, historical_geocoding.extract_building_number(normalised_name) AS house_number_h
