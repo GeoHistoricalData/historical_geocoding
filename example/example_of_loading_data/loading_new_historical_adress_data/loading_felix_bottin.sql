@@ -17,11 +17,34 @@ CREATE TABLE felix_bottin.bottin_raw
 (
   raw_content json
 ); 
-
-
+DROP TABLE IF EXISTS felix_bottin.bottin_raw2 ;
+CREATE TABLE felix_bottin.bottin_raw2
+(
+    gid serial primary key,
+    id text,
+    lines_0 text,
+    name_0 text,
+    raw_c text,
+    street_0 text,
+    street_number_0 text,
+    years_0 text,
+    lines_1 text 
+); 
+ 
+ 
 COPY bottin_raw
 FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/pour_serveur/data_to_be_geolocalised/epita_extraction_bottin_full_auto.json' ;
 
+TRUNCATE bottin_raw2; 
+COPY bottin_raw2 (id ,lines_0 ,name_0 ,raw_c ,street_0 ,street_number_0 ,years_0 ,lines_1)
+--FROM '/home/ghdbguest/data/32_years_2017-03-23.json'
+FROM '/media/sf_RemiCura/DATA/Donnees_belleepoque/theo/results_cleaned.csv'
+CSV DELIMITER ';' ENCODING 'LATIN1' HEADER;
+
+
+SELECT *
+FROM bottin_raw2
+LIMIT 100
 
 SELECT raw_content->>'id' bottin_id, raw_content->>'name' street_name, raw_content->>'raw' raw 
 	,regexp_matches(raw_content->>'street number','\[.*?"(.*)".*?]') AS street_number
@@ -113,3 +136,52 @@ ALTER TABLE visu_date_input ADD PRIMARY KEY (qgis_id)  ;
 	SELECT s, ST_MakePoint(s,-2) AS geom
 	FROM generate_series(1800,2000,25) as  s ; 
 */
+
+
+
+
+DROP TABLE IF EXISTS bottin_geocoded2 ;
+CREATE TABLE bottin_geocoded2 AS 
+
+
+                                 
+DROP TABLE IF EXISTS bottin_geocoded2;  
+CREATE TABLE bottin_geocoded2 AS 
+
+ 
+DECLARE @I; -- Variable names begin with a @
+SET @I = 0; -- @I is an integer
+WHILE @I < 19000
+BEGIN 
+
+	INSERT INTO bottin_geocoded2  
+	SELECT gid,clock_timestamp(), adr_geocode, fuzzy_date AS input_date, f.*
+	FROM (SELECT gid, name_0, adr_geocode, fuzzy_date
+	    FROM felix_bottin.bottin_raw2
+		, CAST(COALESCE(street_number_0||' ','')|| street_0||' , Paris' AS text) AS add0
+		, regexp_replace(add0, 'boul.', 'boulevard') as adr_geocode
+		, sfti_makesfti(years_0::int-1, years_0::int, years_0::int+1) AS fuzzy_date
+	    WHERE    street_0 is not null
+	    AND gid > 1
+	    AND gid BETWEEN @I and @I +99) AS idata 
+	  , historical_geocoding.geocode_name_foolproof(
+		query_adress:=adr_geocode
+		, query_date:= fuzzy_date
+		, use_precise_localisation := true 
+		, ordering_priority_function := '100*(semantic_distance) + 0.1 * temporal_distance + 1* number_distance + 0.1 *spatial_precision + 0.001 * scale_distance +  0.0001 * spatial_distance'
+		, max_number_of_candidates := 1
+		, max_semantic_distance := 0.5
+			, temporal_distance_range := sfti_makesfti(1800,1800,2100,2100) 
+	) AS  f   ; 
+
+   SET @I = @I + 100;
+END
+-- 4h53'14''
+-- 17594 sec for 18019 addresses, 17878 with existing street name
+-- 17292 found
+SELECT count(*)
+FROM felix_bottin.bottin_raw2
+WHERE street_0 is not null and years_0 is not null; 
+
+SELECT count(*)
+FROM bottin_geocoded2
