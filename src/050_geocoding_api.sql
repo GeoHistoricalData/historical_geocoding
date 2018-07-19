@@ -469,3 +469,113 @@ CREATE  AGGREGATE historical_geocoding.first (
 SELECT historical_geocoding.first(s)
 FROM generate_series(1,10) As s
 GROUP BY true; 
+
+
+
+DROP FUNCTION IF EXISTS historical_geocoding.geocode_name_latlong( 
+	query_adress text, query_date sfti, use_precise_localisation boolean
+	, ordering_priority_function text  
+	, max_number_of_candidates int
+	, max_semantic_distance float
+	, temporal_distance_range sfti 
+	, optional_scale_range numrange 
+	, optional_reference_geometry geometry(multipolygon,2154)  
+	, optional_spatial_distance_range float  
+	); 
+CREATE OR REPLACE FUNCTION historical_geocoding.geocode_name_latlong(
+	query_adress text, query_date sfti,  use_precise_localisation boolean DEFAULT TRUE
+	, ordering_priority_function text DEFAULT ' 100*(semantic_distance) + 0.1 * temporal_distance + 10* number_distance + 0.1 *spatial_precision + 0.01 * scale_distance +  0.001 * spatial_distance '
+	, max_number_of_candidates int DEFAULT 10 
+	, max_semantic_distance float DEFAULT 0.45
+	, temporal_distance_range sfti DEFAULT sfti_makesfti(1800,1800,2100,2100) 
+	, optional_scale_range numrange DEFAULT numrange(0,10000)
+	, optional_reference_geometry geometry(multipolygon,2154) DEFAULT NULL
+	, optional_max_spatial_distance float DEFAULT NULL)
+RETURNS table(rank int,
+		  historical_name text,
+		  normalised_name text,
+		  geom geometry,
+		  geog geometry,
+		  specific_fuzzy_date sfti,
+		  specific_spatial_precision float,
+		  historical_source text ,
+		  numerical_origin_process text 
+	, semantic_distance float
+	, temporal_distance float
+	, number_distance float
+	, scale_distance float
+	, spatial_distance float
+	, aggregated_distance float
+	, spatial_precision float
+	, confidence_in_result float) AS 
+	$BODY$
+		--@brief : this function takes an adress and date query, as well as a metric, and tries to find the best match in the database 
+		--@param : there is a 4th optional distance : spatial distance. In this one, the user shall provide a geometry, then results are evaluated also based on the geodesic dist ot thi surface.
+		
+		DECLARE 
+			_sql text := NULL ; 
+			_precise_or_rough_name text  := 'precise';
+		BEGIN  
+			
+			-- the minimal allowed semantic distance is used in indexing, as such it is quite essential
+			EXECUTE format('SELECT set_limit(1-%s) ;',max_semantic_distance) ; 
+			IF use_precise_localisation IS FALSE THEN 
+				_precise_or_rough_name := 'rough' ; 
+			END IF ; 
+
+			--basic sanitizing of user input for ordering function
+			ordering_priority_function := historical_geocoding.sanitize_input(ordering_priority_function) ;  
+			
+
+			
+			_sql := format('SELECT (row_number() over(order by aggregated_score ASC))::int as rank,
+					 historical_geocoding.first(rl.historical_name) historical_name,
+					 historical_geocoding.first(rl.normalised_name ) normalised_name,
+					 ST_Collect(rl.geom ) AS geom,
+					 ST_Collect(ST_Transform(rl.geom, 4326)) AS geog,
+					 historical_geocoding.first(rl.specific_fuzzy_date) AS specific_fuzzy_date,
+					  rl.specific_spatial_precision ,   rl.historical_source ,   rl.numerical_origin_process  
+				,historical_geocoding.first(semantic_distance) AS semantic_distance
+				,historical_geocoding.first(temporal_distance)  AS temporal_distance
+				,historical_geocoding.first(number_distance)  AS number_distance
+				,historical_geocoding.first(scale_distance)  AS scale_distance
+				,historical_geocoding.first(spatial_distance)  AS spatial_distance
+				, aggregated_score::float
+				, spatial_precision::float
+				, 1::float AS confidence_in_result -- TODO : fix this confidence to mean something
+			FROM  historical_geocoding.%1$s_localisation AS rl 
+				LEFT OUTER JOIN geohistorical_object.historical_source as hs ON (rl.historical_source = hs.short_name)
+				LEFT OUTER JOIN geohistorical_object.numerical_origin_process as hs2 ON (rl.numerical_origin_process = hs2.short_name)
+				, COALESCE(1-similarity(normalised_name, $1), 0) AS semantic_distance
+				, COALESCE( (sfti_distance_asym(COALESCE(rl.specific_fuzzy_date,hs.default_fuzzy_date), $2) ).fuzzy_distance,0) AS temporal_distance
+				, CAST( geohistorical_object.json_spatial_precision(hs.default_spatial_precision, ''number'')+geohistorical_object.json_spatial_precision(hs2.default_spatial_precision, ''number'') AS float) AS def_spatial_precision
+				, COALESCE(rl.specific_spatial_precision, def_spatial_precision) AS spatial_precision
+				, least( abs(sqrt(st_area(ST_Buffer(geom,def_spatial_precision)))  - lower($3)),abs(sqrt(st_area(ST_Buffer(geom,def_spatial_precision))) - upper($3))) AS scale_distance
+				, COALESCE(ST_Distance($4::geometry, rl.geom),0) AS spatial_distance
+				, historical_geocoding.extract_building_number($1) AS house_number_i
+				, historical_geocoding.extract_building_number(normalised_name) AS house_number_h
+				, historical_geocoding.number_distance(house_number_i::text, house_number_h::text) as number_distance
+				, CAST ( %3$s AS float) AS aggregated_score
+				
+			WHERE 
+				normalised_name %% $1 --semantic distance
+				--normalised_name <-> $1 --semantic distance
+				AND ST_Intersects(COALESCE(rl.specific_fuzzy_date,hs.default_fuzzy_date)::geometry , $6::geometry ) = TRUE -- time should be compativble with input max time range
+				--AND sqrt(st_Area(geom))::numeric <@ $3 -- scale distance 
+				AND ($4 IS NULL OR ST_DWithin($4::geometry ,rl.geom, $5)) -- the result should be within the allowed distance range to reference geometry
+			GROUP BY upper(historical_name), upper(normalised_name),  historical_source ,numerical_origin_process,sfti2record(rl.specific_fuzzy_date) ,
+					  rl.specific_spatial_precision, aggregated_score,spatial_precision
+			ORDER BY aggregated_score ASC
+				
+			LIMIT %2$s ;',_precise_or_rough_name, max_number_of_candidates , ordering_priority_function);
+			-- RAISE NOTICE '%',_sql ;
+			RETURN QUERY EXECUTE _sql USING query_adress, query_date, optional_scale_range numrange , optional_reference_geometry , optional_max_spatial_distance, temporal_distance_range; 
+
+			
+		RETURN ;
+		END ; 
+	$BODY$
+LANGUAGE plpgsql  VOLATILE CALLED ON NULL INPUT; 
+
+
+
